@@ -1,0 +1,26 @@
+
+<!doctype html>
+
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>csc411 war vis</title>
+
+<script src="https://unpkg.com/topojson@3"></script>
+
+</head>
+
+
+<body>
+<svg style="width:1000px; height:600px"></svg>
+
+<script type="module">
+// hack to get d3 and svg accessible in console...
+// I guess I could just import and select them again, but why.
+import {d3, svg} from "./vis.js";
+window.d3 = d3;
+window.svg = svg;
+</script>
+
+</body>
