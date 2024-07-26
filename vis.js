@@ -2,28 +2,64 @@
 
 import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
 
-const svg = d3.select('svg');
+d3.select('body')
+.style("margin",0)
+.style("padding",0)
+.style("border",0)
+;
+const layoutTopRow = d3.select('body').append("div")
+.style("margin",0)
+.style("padding",0)
+.style("border",0)
+;
+const layoutBottomRow = d3.select('body').append("div")
+.style("margin",0)
+.style("padding",0)
+.style("border",0)
+;
 
-const projection = d3.geoNaturalEarth1();
+const layoutWidth = innerWidth-15;
+const layoutHeight = innerHeight-15;
+
+const layoutMapWidth = layoutWidth-layoutHeight/2;
+const layoutMapHeight = layoutHeight/2;
+
+const layoutTimelineWidth = layoutWidth;
+const layoutTimelineHeight = layoutHeight/2;
+
+const mapSvg =layoutTopRow.append("svg")
+.attr('class','mapSvg')
+.style('width',layoutMapWidth+"px")
+.style('height',layoutMapHeight+"px")
+;
+// <--- data detail terminal goes here
+const timelineSvg = layoutBottomRow.append("svg")
+.attr('class','timelineSvg')
+.style('width',layoutTimelineWidth+"px")
+.style('height',layoutTimelineHeight+"px")
+;
+
+
+
+window.projection = d3.geoNaturalEarth1();
+projection.translate([layoutMapWidth/2,layoutMapHeight/2])
+projection.scale(layoutMapHeight/3);
+
 const pathGenerator = d3.geoPath().projection(projection);
 
-const mapBg = svg.append("g").attr("class","mapBg");
-const mapOverlay = svg.append("g").attr("class","mapOverlay");
+const mapBg = mapSvg.append("g").attr("class","mapBg");
+window.mapOverlay = mapSvg.append("g").attr("class","mapOverlay");
 
-
-// this is the ocean / map outline
-mapBg.append('path')
-.attr('class', 'sphere')
-.attr('d', pathGenerator({type: 'Sphere'}))
-.attr('fill',d3.hsl(0,0,.3))
-;
-mapOverlay.append("text")
+d3.select('body').append("div")
 .attr("class","countryTitle")
+.style("position","absolute")
 .style("pointer-events", "none") // when moving mouse down don't mouseover this text preventing events below.
-.style("text-shadow","0px 0px 5px #fff, 0px 0px 5px #fff, 0px 0px 5px #fff, 0px 0px 5px #fff, 0px 0px 5px #fff ")//-2px -2px 2px #fff, -2px 2px 2px #fff, 2px -2px 2px #fff, 2px 2px 2px #fff")
+.style("text-shadow", Array(13).fill("0px 0px 3px #fff").join(",") ) // That's css uwu
 .attr("fill","black")
 .attr("z",10)
 ;
+
+
 
 var datasets = {};
 
@@ -39,10 +75,28 @@ d3.csv("./data/iso3166😵‍💫.csv")
 .then(data => {
     datasets.iso3166 = data;
 });
+d3.csv("./data/efotw2023.csv")
+.then(data => {
+    datasets.efotw = data;
+    procEfotw();
+});
+
+let procEfotw = function(){
+    let vars_of_interest = [ "1A Government consumption", "1B  Transfers and subsidies", "1C  Government investment", "1Di Top marginal income tax rate", "1Dii Top marginal income and payroll tax rate", "2A  Judicial independence", "2B  Impartial courts", "2C  Property rights", "2D  Military interference", "2E Legal integrity", "2F Contracts", "2G Real property", "2H Police and crime", "3A  Money growth", "3B  Standard deviation of inflation", "3C  Inflation", "3D  Foreign currency bank accounts", "4Ai  Trade tax revenue", "4Aii  Mean tariff rate", "4Aiii  Standard deviation of tariff rates", "4Bi  Non-tariff trade barriers", "4Bii  Costs of importing and exporting", "4C  Black market exchange rates", "4Di  Financial openness", "4Dii  Capital controls", "4Diii Freedom of foreigners to visit", "4Div Protection of Foreign Assets", "5Ai  Ownership of banks", "5Aii Private sector credit", "5Aiii  Interest rate controls/negative real interest rates)", "5Bi  Labor regulations and minimum wage", "5Bii  Hiring and firing regulations", "5Biii  Flexible wage determination", "5Biv  Hours Regulations", "5Bv Cost of worker dismissal", "5Bvi  Conscription", "5Bvii Foreign Labor", "5Ci  Regulatory Burden", "5Cii  Bureacracy costs", "5Ciii  Impartial Public Administration", "5Civ Tax compliance", "5Di  Market openness", "5Dii Business Permits", "5Diii Distorton of the business environment", ] ; // sorry.
+
+    let data_of_interest = datasets.efotw.map( d => vars_of_interest.map( i => d[i] ) );
+
+    window.ef_names = vars_of_interest;
+    window.ef = tf.tensor(data_of_interest,null,'float32')
+
+};
 
 
-// refcode
-// needs in callback or something
+
+// foo is reference code...
+
+// this is a bunch of code snippits from trying
+// to line up different datasests in different ways.
 
 var foo = function(){
 
@@ -80,7 +134,7 @@ name2atlas[	"Yugoslavia" ] = name2atlas["Bosnia and Herz."]; // also Slovenia, C
 
 // so this is how you would highlight a country based on a war:
 cName = datasets.interStateWarData[0].StateName
-svg.select(".mapBg") .selectAll("path[name='"+cName+"']").attr("fill","pink")
+mapSvg.select(".mapBg") .selectAll("path[name='"+cName+"']").attr("fill","pink")
 // possibly it could be more computationally efficient some other way,
 // but in general d3 seems pretty optimized.
 // Fine for human interaction, might chug on a bunch of automated stuff.
@@ -90,45 +144,78 @@ svg.select(".mapBg") .selectAll("path[name='"+cName+"']").attr("fill","pink")
 
 
 d3.json('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json')
-  .then(data => {
-    datasets.worldAtlasCountries = data;
+.then(data => {
+  datasets.worldAtlasCountries = data;
+  drawMap();
+})
+;
+
+window.drawMap = function(){
+
+    // this is the ocean / map outline
+
+    let sphere = mapBg.selectAll('.sphere').data([0]);
+    sphere
+    .enter().append('path')
+    .attr('class', 'sphere')
+    .attr('fill',d3.hsl(0,0,.3))
+    .merge(sphere)
+    .attr('d', pathGenerator({type: 'Sphere'}))
+    ;
+
+    // this is the countries
+
+    let data = datasets.worldAtlasCountries;
     let countries = topojson.feature(data, data.objects.countries);
-    datasets.tj_worldAtlasCountries = countries;
-    mapBg.selectAll('path').data(countries.features)
-      .enter().append('path')
-        .attr('class', 'country')
-        .attr('_', (d)=>{d._value_ = Math.random()*(1-.1-.4)+.4; d.color = d3.hsl(30,0,d._value_);})
-        .attr('fill', d=>d.color)
-        .on('mouseenter', ()=>{
-            d3.select(event.target)
-            //.attr("fill","sandybrown")
-            //.attr("fill","peachpuff")
-            .attr("fill",d=>d3.hsl(30,0.8,d._value_))
-            ;
-            mapOverlay.select(".countryTitle")
-            .text(event.target.getAttribute("name"))
-            ;
-        })
-        .on('mousemove',()=>{
-            mapOverlay.select(".countryTitle")
-            .attr("x",event.clientX-30)
-            .attr("y",event.clientY+20)
-            ;
-        })
-        .on('mouseleave', ()=>{
-            d3.select(event.target)
-            .attr('fill', d=>d.color)
-            ;
-            mapOverlay.select(".countryTitle")
-            .text("")
-            ;
-        })
-        .attr('d', pathGenerator)
-        .attr("name",(d)=>{
-            return( d.properties.name );
-        })
+
+    countries.features.map( (c) => {
+        c._value_ = Math.random()*(1-.1-.4)+.4;
+        c.color = d3.hsl(30,0,c._value_);
+        });
+
+    let d3cou = mapBg.selectAll('.country').data(countries.features);
+    d3cou
+    .enter().append('path')
+    .attr('class', 'country')
+    .attr('fill', d=>d.color)
+    .on('mouseenter', (d)=>{
+        d3.select(event.target)
+        //.attr("fill","sandybrown")
+        //.attr("fill","peachpuff")
+        .attr("fill",(d)=>d3.hsl(30,0.8,d._value_))
         ;
-  });
+        d3.select(".countryTitle")
+        .html(event.target.getAttribute("name"))
+        ;
+    })
+    .on('mousemove',(d)=>{
+        d3.select(".countryTitle")
+        .style("left",(event.clientX-30)+"px")
+        .style("top",(event.clientY+20)+"px")
+        //.style("x",(event.clientX-30)+"px")
+        //.style("y",(event.clientY+20)+"px")
+        ;
+    })
+    .on('mouseleave', (d)=>{
+        d3.select(event.target)
+        .attr('fill', d=>d.color)
+        ;
+        d3.select(".countryTitle")
+        .html("")
+        ;
+    })
+    .attr("name",(d)=>{
+        return( d.properties.name );
+    })
+    .merge(d3cou)
+    .attr('d', pathGenerator)
+    ;
+};
 
 
-export { d3, svg, datasets };
+// export stuff for access later & in web console.
+window.d3 = d3;
+window.mapSvg = mapSvg;
+window.timelineSvg = timelineSvg;
+window.datasets = datasets;
+

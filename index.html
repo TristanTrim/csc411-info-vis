@@ -2,27 +2,27 @@
 <!doctype html>
 
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
 
-<title>csc411 war vis</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<script src="https://unpkg.com/topojson@3"></script>
-<script src="./frame/frame.js"></script>
+    <title>csc411 war vis</title>
+
+    <!-- topojson for country shapes on map -->
+    <script src="https://unpkg.com/topojson@3"></script>
+
+    <!-- :^p -->
+    <script src="./frame/frame.js"></script>
+
+    <!-- tf: Import @tensorflow/tfjs-core -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core"></script>
+
+    <!-- tf: Adds the WebGL backend to the global backend registry -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl"></script>
+
+    <!-- our plucky visualization code -->
+    <script type="module" src="./vis.js"> </script>
 
 </head>
 
-
-<body>
-<svg style="width:1000px; height:600px"></svg>
-
-<script type="module">
-// hack to get d3 and svg accessible in console...
-// I guess I could just import and select them again, but why.
-import {d3, svg, datasets } from "./vis.js";
-window.d3 = d3;
-window.svg = svg;
-window.datasets = datasets;
-</script>
-
-</body>
+<body></body>
