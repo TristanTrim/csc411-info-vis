@@ -10,10 +10,19 @@ const pathGenerator = d3.geoPath().projection(projection);
 const mapBg = svg.append("g").attr("class","mapBg");
 const mapOverlay = svg.append("g").attr("class","mapOverlay");
 
+
+// this is the ocean / map outline
 mapBg.append('path')
 .attr('class', 'sphere')
 .attr('d', pathGenerator({type: 'Sphere'}))
-.attr('fill','grey')
+.attr('fill',d3.hsl(0,0,.3))
+;
+mapOverlay.append("text")
+.attr("class","countryTitle")
+.style("pointer-events", "none") // when moving mouse down don't mouseover this text preventing events below.
+.style("text-shadow","0px 0px 5px #fff, 0px 0px 5px #fff, 0px 0px 5px #fff, 0px 0px 5px #fff, 0px 0px 5px #fff ")//-2px -2px 2px #fff, -2px 2px 2px #fff, 2px -2px 2px #fff, 2px 2px 2px #fff")
+.attr("fill","black")
+.attr("z",10)
 ;
 
 var datasets = {};
@@ -88,11 +97,13 @@ d3.json('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json')
     mapBg.selectAll('path').data(countries.features)
       .enter().append('path')
         .attr('class', 'country')
-        .attr('fill', 'darkgrey')
+        .attr('_', (d)=>{d._value_ = Math.random()*(1-.1-.4)+.4; d.color = d3.hsl(30,0,d._value_);})
+        .attr('fill', d=>d.color)
         .on('mouseenter', ()=>{
             d3.select(event.target)
             //.attr("fill","sandybrown")
-            .attr("fill","peachpuff")
+            //.attr("fill","peachpuff")
+            .attr("fill",d=>d3.hsl(30,0.8,d._value_))
             ;
             mapOverlay.select(".countryTitle")
             .text(event.target.getAttribute("name"))
@@ -106,7 +117,7 @@ d3.json('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json')
         })
         .on('mouseleave', ()=>{
             d3.select(event.target)
-            .attr("fill","darkgrey")
+            .attr('fill', d=>d.color)
             ;
             mapOverlay.select(".countryTitle")
             .text("")
@@ -119,10 +130,5 @@ d3.json('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json')
         ;
   });
 
-mapOverlay.append("text")
-.attr("class","countryTitle")
-.attr("fill","black")
-.attr("z",10)
-;
 
 export { d3, svg, datasets };
