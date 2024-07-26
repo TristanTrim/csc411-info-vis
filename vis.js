@@ -212,6 +212,7 @@ window.drawMap = function(){
     ;
 };
 
+// simply adding a comment to confirm I know how to push & pull
 
 // export stuff for access later & in web console.
 window.d3 = d3;
