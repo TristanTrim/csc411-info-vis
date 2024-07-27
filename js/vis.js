@@ -385,8 +385,102 @@ window.drawMap = function(){
     ;
 };
 
-// simply adding a comment to confirm I know how to push & pull
-// ( it worked ! )
+drawTimeline();
+
+// attempt at making a basic scatterplot, will tweak to fit our specifications once I can see it...
+window.drawTimeline = function(){
+    test_data = [1,2,3,4,5,5,5,6,2,3];
+
+    const width = 1368,
+        height = 196,
+        marginTop = 25,
+        marginRight = 20,
+        marginBottom = 35,
+        marginLeft = 40;
+
+    const x = d3.scaleLinear()
+        .domain(d3.extent(test_data, d => d.mpg)).nice()
+        .range([marginLeft, width - marginRight]);
+
+    const y = d3.scaleLinear()
+        .domain(d3.extent(test_data, d => d.hp)).nice()
+        .range([height - marginBottom, marginTop]);
+
+    const svg = d3.create("svg")
+        .attr("viewbox", [0, 0, width, height])
+        .attr("style", "max-width: 100%; height: auto; font: 10px sans-serif;");
+
+    svg.append("g")
+        .attr("transform", `translate(0,${height - marginBottom})`)
+        .call(d3.axisBottom(x).ticks(width / 80))
+        .call(g => g.select(".domain").remove())
+        .call(g => g.append("text")
+            .attr("x", width)
+            .attr("y", marginBottom - 4)
+            .attr("fill", "currentColor")
+            .attr("text-anchor", "end")
+            .text("Year →"));
+
+    svg.append("g")
+        .attr("transform", `translate(${marginLeft},0)`)
+        .call(d3.axisLeft(y))
+        .call(g => g.select(".domain").remove())
+        .call(g => g.append("text")
+            .attr("x", -marginLeft)
+            .attr("y", 10)
+            .attr("fill", "currentColor")
+            .attr("text-anchor", "start")
+            .text("↑ Economic Freedom Rating"));
+
+    // Create grid
+    svg.append("g")
+        .attr("stroke", "currentColor")
+        .attr("stroke-opacity", 0.1)
+        .call(g => g.append("g")
+          .selectAll("line")
+          .data(x.ticks())
+          .join("line")
+            .attr("x1", d => 0.5 + x(d))
+            .attr("x2", d => 0.5 + x(d))
+            .attr("y1", marginTop)
+            .attr("y2", height - marginBottom))
+        .call(g => g.append("g")
+          .selectAll("line")
+          .data(y.ticks())
+          .join("line")
+            .attr("y1", d => 0.5 + y(d))
+            .attr("y2", d => 0.5 + y(d))
+            .attr("x1", marginLeft)
+            .attr("x2", width - marginRight));
+
+      // Add a layer of dots.
+    svg.append("g")
+          .attr("stroke", "steelblue")
+          .attr("stroke-width", 1.5)
+          .attr("fill", "none")
+        .selectAll("circle")
+        .data(test_data)
+        .join("circle")
+          .attr("cx", d => x(d.mpg))
+          .attr("cy", d => y(d.hp))
+          .attr("r", 3);
+
+    // Add a layer of labels.
+    svg.append("g")
+          .attr("font-family", "sans-serif")
+          .attr("font-size", 10)
+        .selectAll("text")
+        .data(test_data)
+        .join("text")
+          .attr("dy", "0.35em")
+          .attr("x", d => x(d.mpg) + 7)
+          .attr("y", d => y(d.hp))
+          .text(d => d.name);
+
+    return svg.node();
+
+}
+
 
 // export stuff for access later & in web console.
 window.d3 = d3;
