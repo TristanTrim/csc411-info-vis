@@ -125,16 +125,43 @@ let makeNDSP = function(){
     }
 
 
+    // layers to control what shows up on top of what
+
+    let axisLineLayer = timelineSvg.append("g").attr("class","axisLineLayer");
+
+    let dataLayer = timelineSvg.append("g").attr("class","dataLayer")
+    //.style("pointer-events", "none") ; // don't prevent mouse events below.
+
+        // This is cool:
+        // https://stackoverflow.com/a/14387859/3988392
+        //  <!-- This transfer function leaves all alpha values of the unfiltered
+        //       graphics that are lower than .5 at their original values.
+        //       All higher alpha above will be changed to .5.
+        //       These calculations are derived from the values in
+        //       the tableValues attribute using linear interpolation. -->
+    timelineSvg.append("filter")
+    .attr("id", "constantOpacity")
+    .append("feComponentTransfer")
+    .append("feFuncA")
+    .attr("type","table")
+    .attr("tableValues","0 .5 .5")
+    ;
+    let axisCircleLayer = timelineSvg.append("g")
+    .attr("class","axisCircleLayer")
+    .attr("filter","url(#constantOpacity)")
+    ;
+
+
     // add datapoints
 
     ndsp.efcy_data = ef.dot(ndsp.fakeAxes).x;
 
-    timelineSvg.selectAll(".efcy").data(ndsp.efcy_data)
+    dataLayer.selectAll(".efcy").data(ndsp.efcy_data)
     .enter()
     .append("circle")
     .attr("class","efcy")
-    .attr("fill",d3.hsl(0,0,.9))
-    .attr("r",0.5)
+    .attr("fill",d3.hsl(0,0,1,.5))
+    .attr("r",0.7)
     .attr("cx", d => 
         ndsp.center_pos[0]+d[0] * layoutHeight/3000)
     .attr("cy", d => 
@@ -144,25 +171,30 @@ let makeNDSP = function(){
 
     // add axes
 
-    let axes = timelineSvg.selectAll(".ndspAxes")
+      // lines
+    axisLineLayer.selectAll(".axisLine")
     .data(ndsp.fakeAxes)
     .enter()
-    .append("g")
-    .attr("class","ndspAxes")
-    ;
-    axes.append("line")
+    .append("line")
+    .attr("class","axisLine")
     .attr("id",(d,i)=>"axline"+i)
     .attr("x1",(d)=> ndsp.center_pos[0])
     .attr("y1",(d)=> ndsp.center_pos[1])
     .attr("x2",(d)=> ndsp.scale_factor*d[0]+ndsp.center_pos[0])
     .attr("y2",(d)=> ndsp.center_pos[1]-ndsp.scale_factor*d[1])
-    .attr("stroke",d3.hsl(0,0,0,.3))
+    .attr("stroke",d3.hsl(0,0,0,.5))
     ;
-    axes.append("circle")
+      // circles
+    axisCircleLayer.selectAll(".axisCircle")
+    .data(ndsp.fakeAxes)
+    .enter()
+    .append("circle")
+    .attr("class","axisCircle")
     .attr("id",(d,i)=>i)
     .attr("r",8)
-    .attr("fill",d3.hsl(0,0,.1,.2) )
-    .attr("stroke","#000")
+    .attr("fill",d3.hsl(0,0,.1,.1) )
+    .attr("stroke",d3.hsl(0,0,.1) )
+    .attr("stroke-width","2px")
     .attr("cx",(d)=> ndsp.scale_factor*d[0]+ndsp.center_pos[0])
     .attr("cy",(d)=> ndsp.center_pos[1]-ndsp.scale_factor*d[1])
     .call(d3.drag()
