@@ -156,7 +156,7 @@ let makeNDSP = function(){
     .attr("y1",(d)=> ndsp.center_pos[1])
     .attr("x2",(d)=> ndsp.scale_factor*d[0]+ndsp.center_pos[0])
     .attr("y2",(d)=> ndsp.center_pos[1]-ndsp.scale_factor*d[1])
-    .attr("stroke","#000")
+    .attr("stroke",d3.hsl(0,0,0,.3))
     ;
     axes.append("circle")
     .attr("id",(d,i)=>i)
