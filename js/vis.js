@@ -348,37 +348,37 @@ window.drawMap = function(){
     .attr('class', 'country')
     .attr('stroke',"#000")
     .attr('fill', d=>d.color)
-    .on('mouseenter', (d)=>{
+    .on('mouseenter', (e)=>{
         // TODO: figure out how to make
         // all the paths of the outline
         // change color.
-        d3.select(event.target)
+        d3.select(e.target)
         //.attr("fill","sandybrown")
         //.attr("fill","peachpuff")
         .attr("fill",(d)=>d3.hsl(30,0.8,d._value_))
         ;
         d3.select(".countryTitle")
-        .html(event.target.getAttribute("name"))
+        .html(e.target.getAttribute("name"))
         ;
     })
-    .on('mousemove',(d)=>{
+    .on('mousemove',(e)=>{
         d3.select(".countryTitle")
-        .style("left",(event.clientX-30)+"px")
-        .style("top",(event.clientY+20)+"px")
-        //.style("x",(event.clientX-30)+"px")
-        //.style("y",(event.clientY+20)+"px")
+        .style("left",(e.clientX-30)+"px")
+        .style("top",(e.clientY+20)+"px")
+        //.style("x",(e.clientX-30)+"px")
+        //.style("y",(e.clientY+20)+"px")
         ;
     })
-    .on('mouseleave', (d)=>{
-        d3.select(event.target)
+    .on('mouseleave', (e)=>{
+        d3.select(e.target)
         .attr('fill', d=>d.color)
         ;
         d3.select(".countryTitle")
         .html("")
         ;
     })
-    .attr("name",(d)=>{
-        return( d.properties.name );
+    .attr("name",(e)=>{
+        return( e.properties.name );
     })
     .merge(d3cou)
     .attr('d', pathGenerator)
