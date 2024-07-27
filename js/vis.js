@@ -103,10 +103,46 @@ let makeNDSP = function(){
     let ndsp = {};
 
     ndsp.center_pos = [layoutWidth - layoutHeight/4, layoutHeight/4];
-
-    ndsp.fakeAxes = [[7,7],[1,2],[5,7]];
-
     ndsp.scale_factor = (layoutHeight - 40)/40;
+
+    // bg
+
+    ndsp.bg = timelineSvg.append("circle")
+    .attr("r",layoutHeight/4)
+    .attr("cx",ndsp.center_pos[0])
+    .attr("cy",ndsp.center_pos[1])
+    .attr("fill",d3.hsl(0,0,.3) )
+    ;
+
+
+    // axes
+
+    ndsp.fakeAxes = [];
+    for (let i=0;i<44;i++){
+        ndsp.fakeAxes.push([
+            -15*i/44 + 7.4,
+            .5+.1* (22-Math.abs(i-22)) * Math.random() ]);
+    }
+
+
+    // add datapoints
+
+    ndsp.efcy_data = ef.dot(ndsp.fakeAxes).x;
+
+    timelineSvg.selectAll(".efcy").data(ndsp.efcy_data)
+    .enter()
+    .append("circle")
+    .attr("class","efcy")
+    .attr("fill",d3.hsl(0,0,.9))
+    .attr("r",0.5)
+    .attr("cx", d => 
+        ndsp.center_pos[0]+d[0] * layoutHeight/3000)
+    .attr("cy", d => 
+        ndsp.center_pos[1]-d[1] * layoutHeight/3000)
+    ;
+
+
+    // add axes
 
     let axes = timelineSvg.selectAll(".ndspAxes")
     .data(ndsp.fakeAxes)
@@ -114,11 +150,21 @@ let makeNDSP = function(){
     .append("g")
     .attr("class","ndspAxes")
     ;
+    axes.append("line")
+    .attr("id",(d,i)=>"axline"+i)
+    .attr("x1",(d)=> ndsp.center_pos[0])
+    .attr("y1",(d)=> ndsp.center_pos[1])
+    .attr("x2",(d)=> ndsp.scale_factor*d[0]+ndsp.center_pos[0])
+    .attr("y2",(d)=> ndsp.center_pos[1]-ndsp.scale_factor*d[1])
+    .attr("stroke","#000")
+    ;
     axes.append("circle")
-    .attr("r",10)
-    .attr("cx",(d)=> ndsp.scale_factor*d[0]+ndsp.center_pos[0])
-    .attr("cy",(d)=> ndsp.scale_factor*d[1]+ndsp.center_pos[1])
     .attr("id",(d,i)=>i)
+    .attr("r",8)
+    .attr("fill",d3.hsl(0,0,.1,.2) )
+    .attr("stroke","#000")
+    .attr("cx",(d)=> ndsp.scale_factor*d[0]+ndsp.center_pos[0])
+    .attr("cy",(d)=> ndsp.center_pos[1]-ndsp.scale_factor*d[1])
     .call(d3.drag()
         .on("start", ()=>{
             ndsp.dragged = event.target;
@@ -128,7 +174,7 @@ let makeNDSP = function(){
             ndsp.fakeAxes[id] = numeric.add(
                     ndsp.fakeAxes[id],
                     numeric.div(
-                            [e.dx,e.dy],
+                            [e.dx,-e.dy],
                             ndsp.scale_factor
                             ));
 
@@ -140,7 +186,10 @@ let makeNDSP = function(){
             }
 
 
-            let new_coord = numeric.add(numeric.mul(ndsp.scale_factor,ndsp.fakeAxes[id]), ndsp.center_pos);
+            let new_coord = numeric.add(
+                [ ndsp.scale_factor*ndsp.fakeAxes[id][0],
+                  -ndsp.scale_factor*ndsp.fakeAxes[id][1] ],
+                ndsp.center_pos);
             d3.select(ndsp.dragged)
             .attr("cx", new_coord[0])
             .attr("cy", new_coord[1])
@@ -150,6 +199,43 @@ let makeNDSP = function(){
             .attr("y2", new_coord[1])
             ;
 
+         //   let [xs, ys] = numeric.transpose(ndsp.efcy_data);
+         //   let ax = ef.x[id];
+         //   ndsp.efcy_data = numeric.transpose([
+         //       numeric.add(
+         //           xs,
+         //           numeric.mul(
+         //               numeric.mul(
+         //                   e.dx / ndsp.scale_factor ,
+         //                   ax
+         //               ),
+         //               xs
+         //           )
+         //       ),
+         //       numeric.add(
+         //           ys,
+         //           numeric.mul(
+         //               numeric.mul(
+         //                   -e.dy / ndsp.scale_factor  ,
+         //                   ax
+         //               ),
+         //               ys
+         //           )
+         //       )
+         //   ]);
+                    
+
+            // recalculate the positions of the datapoints !
+            ndsp.efcy_data = ef.dot(ndsp.fakeAxes).x;
+            // reposition them.
+            let efcy = timelineSvg.selectAll(".efcy").data(ndsp.efcy_data);
+            efcy
+            .merge(efcy)
+            .attr("cx", d => 
+                ndsp.center_pos[0]+d[0] * layoutHeight/3000)
+            .attr("cy", d => 
+                ndsp.center_pos[1]-d[1] * layoutHeight/3000)
+            ;
         })
       //  .on("end", ()=>{
       //  })
@@ -159,14 +245,6 @@ let makeNDSP = function(){
         //.attr("cy",(d)=> ndsp.scale_factor*d[1]+ndsp.center_pos[1])
     })
     ;
-    axes.append("line")
-    .attr("id",(d,i)=>"axline"+i)
-    .attr("x1",(d)=> ndsp.center_pos[0])
-    .attr("y1",(d)=> ndsp.center_pos[1])
-    .attr("x2",(d)=> ndsp.scale_factor*d[0]+ndsp.center_pos[0])
-    .attr("y2",(d)=> ndsp.scale_factor*d[1]+ndsp.center_pos[1])
-    .attr("stroke","#000")
-    ;
 
 
 
@@ -174,9 +252,11 @@ let makeNDSP = function(){
     .attr("r",5)
     .attr("cx",ndsp.center_pos[0])
     .attr("cy",ndsp.center_pos[1])
-    .attr("fill","#fff")
+    .attr("fill",d3.hsl(0,0,.6) )
     .attr("stroke","#000")
     ;
+
+
 
     return ndsp;
 };
@@ -266,8 +346,12 @@ window.drawMap = function(){
     d3cou
     .enter().append('path')
     .attr('class', 'country')
+    .attr('stroke',"#000")
     .attr('fill', d=>d.color)
     .on('mouseenter', (d)=>{
+        // TODO: figure out how to make
+        // all the paths of the outline
+        // change color.
         d3.select(event.target)
         //.attr("fill","sandybrown")
         //.attr("fill","peachpuff")
