@@ -84,13 +84,102 @@ d3.csv("./data/efotw2023.csv")
 let procEfotw = function(){
     let vars_of_interest = [ "1A Government consumption", "1B  Transfers and subsidies", "1C  Government investment", "1Di Top marginal income tax rate", "1Dii Top marginal income and payroll tax rate", "2A  Judicial independence", "2B  Impartial courts", "2C  Property rights", "2D  Military interference", "2E Legal integrity", "2F Contracts", "2G Real property", "2H Police and crime", "3A  Money growth", "3B  Standard deviation of inflation", "3C  Inflation", "3D  Foreign currency bank accounts", "4Ai  Trade tax revenue", "4Aii  Mean tariff rate", "4Aiii  Standard deviation of tariff rates", "4Bi  Non-tariff trade barriers", "4Bii  Costs of importing and exporting", "4C  Black market exchange rates", "4Di  Financial openness", "4Dii  Capital controls", "4Diii Freedom of foreigners to visit", "4Div Protection of Foreign Assets", "5Ai  Ownership of banks", "5Aii Private sector credit", "5Aiii  Interest rate controls/negative real interest rates)", "5Bi  Labor regulations and minimum wage", "5Bii  Hiring and firing regulations", "5Biii  Flexible wage determination", "5Biv  Hours Regulations", "5Bv Cost of worker dismissal", "5Bvi  Conscription", "5Bvii Foreign Labor", "5Ci  Regulatory Burden", "5Cii  Bureacracy costs", "5Ciii  Impartial Public Administration", "5Civ Tax compliance", "5Di  Market openness", "5Dii Business Permits", "5Diii Distorton of the business environment", ] ; // sorry.
 
-    let data_of_interest = datasets.efotw.map( d => vars_of_interest.map( i => d[i] ) );
 
+    // tf needs to request data back from the gpu which is probs gonna be slower most of the time
+    
+    //let data_of_interest = datasets.efotw.map( d => vars_of_interest.map( i => d[i] ) );
+    //window.ef = tf.tensor(data_of_interest,null,'float32')
+
+    window.ef = numeric.t(
+            datasets.efotw.map( d => vars_of_interest.map( i => d[i] )));
     window.ef_names = vars_of_interest;
-    window.ef = tf.tensor(data_of_interest,null,'float32')
+
+    window.ndsp = makeNDSP();
 
 };
 
+let makeNDSP = function(){
+
+    let ndsp = {};
+
+    ndsp.center_pos = [layoutWidth - layoutHeight/4, layoutHeight/4];
+
+    ndsp.fakeAxes = [[7,7],[1,2],[5,7]];
+
+    ndsp.scale_factor = (layoutHeight - 40)/40;
+
+    let axes = timelineSvg.selectAll(".ndspAxes")
+    .data(ndsp.fakeAxes)
+    .enter()
+    .append("g")
+    .attr("class","ndspAxes")
+    ;
+    axes.append("circle")
+    .attr("r",10)
+    .attr("cx",(d)=> ndsp.scale_factor*d[0]+ndsp.center_pos[0])
+    .attr("cy",(d)=> ndsp.scale_factor*d[1]+ndsp.center_pos[1])
+    .attr("id",(d,i)=>i)
+    .call(d3.drag()
+        .on("start", ()=>{
+            ndsp.dragged = event.target;
+        })
+        .on("drag", (e)=>{
+            let id = ndsp.dragged.id;
+            ndsp.fakeAxes[id] = numeric.add(
+                    ndsp.fakeAxes[id],
+                    numeric.div(
+                            [e.dx,e.dy],
+                            ndsp.scale_factor
+                            ));
+
+            if (numeric.norm2(ndsp.fakeAxes[id]) > 10) {
+                ndsp.fakeAxes[id] = numeric.mul(10,numeric.div(
+                    ndsp.fakeAxes[id],
+                    numeric.norm2(ndsp.fakeAxes[id])
+                    ));
+            }
+
+
+            let new_coord = numeric.add(numeric.mul(ndsp.scale_factor,ndsp.fakeAxes[id]), ndsp.center_pos);
+            d3.select(ndsp.dragged)
+            .attr("cx", new_coord[0])
+            .attr("cy", new_coord[1])
+            ;
+            d3.select("#axline"+id)
+            .attr("x2", new_coord[0])
+            .attr("y2", new_coord[1])
+            ;
+
+        })
+      //  .on("end", ()=>{
+      //  })
+    )
+    .on("click",()=>{
+        //.attr("cx",(d)=> ndsp.scale_factor*d[0]+ndsp.center_pos[0])
+        //.attr("cy",(d)=> ndsp.scale_factor*d[1]+ndsp.center_pos[1])
+    })
+    ;
+    axes.append("line")
+    .attr("id",(d,i)=>"axline"+i)
+    .attr("x1",(d)=> ndsp.center_pos[0])
+    .attr("y1",(d)=> ndsp.center_pos[1])
+    .attr("x2",(d)=> ndsp.scale_factor*d[0]+ndsp.center_pos[0])
+    .attr("y2",(d)=> ndsp.scale_factor*d[1]+ndsp.center_pos[1])
+    .attr("stroke","#000")
+    ;
+
+
+
+    ndsp.center = timelineSvg.append("circle")
+    .attr("r",5)
+    .attr("cx",ndsp.center_pos[0])
+    .attr("cy",ndsp.center_pos[1])
+    .attr("fill","#fff")
+    .attr("stroke","#000")
+    ;
+
+    return ndsp;
+};
 
 
 // foo is reference code...
