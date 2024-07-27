@@ -84,13 +84,182 @@ d3.csv("./data/efotw2023.csv")
 let procEfotw = function(){
     let vars_of_interest = [ "1A Government consumption", "1B  Transfers and subsidies", "1C  Government investment", "1Di Top marginal income tax rate", "1Dii Top marginal income and payroll tax rate", "2A  Judicial independence", "2B  Impartial courts", "2C  Property rights", "2D  Military interference", "2E Legal integrity", "2F Contracts", "2G Real property", "2H Police and crime", "3A  Money growth", "3B  Standard deviation of inflation", "3C  Inflation", "3D  Foreign currency bank accounts", "4Ai  Trade tax revenue", "4Aii  Mean tariff rate", "4Aiii  Standard deviation of tariff rates", "4Bi  Non-tariff trade barriers", "4Bii  Costs of importing and exporting", "4C  Black market exchange rates", "4Di  Financial openness", "4Dii  Capital controls", "4Diii Freedom of foreigners to visit", "4Div Protection of Foreign Assets", "5Ai  Ownership of banks", "5Aii Private sector credit", "5Aiii  Interest rate controls/negative real interest rates)", "5Bi  Labor regulations and minimum wage", "5Bii  Hiring and firing regulations", "5Biii  Flexible wage determination", "5Biv  Hours Regulations", "5Bv Cost of worker dismissal", "5Bvi  Conscription", "5Bvii Foreign Labor", "5Ci  Regulatory Burden", "5Cii  Bureacracy costs", "5Ciii  Impartial Public Administration", "5Civ Tax compliance", "5Di  Market openness", "5Dii Business Permits", "5Diii Distorton of the business environment", ] ; // sorry.
 
-    let data_of_interest = datasets.efotw.map( d => vars_of_interest.map( i => d[i] ) );
 
+    // tf needs to request data back from the gpu which is probs gonna be slower most of the time
+    
+    //let data_of_interest = datasets.efotw.map( d => vars_of_interest.map( i => d[i] ) );
+    //window.ef = tf.tensor(data_of_interest,null,'float32')
+
+    window.ef = numeric.t(
+            datasets.efotw.map( d => vars_of_interest.map( i => d[i] )));
     window.ef_names = vars_of_interest;
-    window.ef = tf.tensor(data_of_interest,null,'float32')
+
+    window.ndsp = makeNDSP();
 
 };
 
+let makeNDSP = function(){
+
+    let ndsp = {};
+
+    ndsp.center_pos = [layoutWidth - layoutHeight/4, layoutHeight/4];
+    ndsp.scale_factor = (layoutHeight - 40)/40;
+
+    // bg
+
+    ndsp.bg = timelineSvg.append("circle")
+    .attr("r",layoutHeight/4)
+    .attr("cx",ndsp.center_pos[0])
+    .attr("cy",ndsp.center_pos[1])
+    .attr("fill",d3.hsl(0,0,.3) )
+    ;
+
+
+    // axes
+
+    ndsp.fakeAxes = [];
+    for (let i=0;i<44;i++){
+        ndsp.fakeAxes.push([
+            -15*i/44 + 7.4,
+            .5+.1* (22-Math.abs(i-22)) * Math.random() ]);
+    }
+
+
+    // add datapoints
+
+    ndsp.efcy_data = ef.dot(ndsp.fakeAxes).x;
+
+    timelineSvg.selectAll(".efcy").data(ndsp.efcy_data)
+    .enter()
+    .append("circle")
+    .attr("class","efcy")
+    .attr("fill",d3.hsl(0,0,.9))
+    .attr("r",0.5)
+    .attr("cx", d => 
+        ndsp.center_pos[0]+d[0] * layoutHeight/3000)
+    .attr("cy", d => 
+        ndsp.center_pos[1]-d[1] * layoutHeight/3000)
+    ;
+
+
+    // add axes
+
+    let axes = timelineSvg.selectAll(".ndspAxes")
+    .data(ndsp.fakeAxes)
+    .enter()
+    .append("g")
+    .attr("class","ndspAxes")
+    ;
+    axes.append("line")
+    .attr("id",(d,i)=>"axline"+i)
+    .attr("x1",(d)=> ndsp.center_pos[0])
+    .attr("y1",(d)=> ndsp.center_pos[1])
+    .attr("x2",(d)=> ndsp.scale_factor*d[0]+ndsp.center_pos[0])
+    .attr("y2",(d)=> ndsp.center_pos[1]-ndsp.scale_factor*d[1])
+    .attr("stroke","#000")
+    ;
+    axes.append("circle")
+    .attr("id",(d,i)=>i)
+    .attr("r",8)
+    .attr("fill",d3.hsl(0,0,.1,.2) )
+    .attr("stroke","#000")
+    .attr("cx",(d)=> ndsp.scale_factor*d[0]+ndsp.center_pos[0])
+    .attr("cy",(d)=> ndsp.center_pos[1]-ndsp.scale_factor*d[1])
+    .call(d3.drag()
+        .on("start", ()=>{
+            ndsp.dragged = event.target;
+        })
+        .on("drag", (e)=>{
+            let id = ndsp.dragged.id;
+            ndsp.fakeAxes[id] = numeric.add(
+                    ndsp.fakeAxes[id],
+                    numeric.div(
+                            [e.dx,-e.dy],
+                            ndsp.scale_factor
+                            ));
+
+            if (numeric.norm2(ndsp.fakeAxes[id]) > 10) {
+                ndsp.fakeAxes[id] = numeric.mul(10,numeric.div(
+                    ndsp.fakeAxes[id],
+                    numeric.norm2(ndsp.fakeAxes[id])
+                    ));
+            }
+
+
+            let new_coord = numeric.add(
+                [ ndsp.scale_factor*ndsp.fakeAxes[id][0],
+                  -ndsp.scale_factor*ndsp.fakeAxes[id][1] ],
+                ndsp.center_pos);
+            d3.select(ndsp.dragged)
+            .attr("cx", new_coord[0])
+            .attr("cy", new_coord[1])
+            ;
+            d3.select("#axline"+id)
+            .attr("x2", new_coord[0])
+            .attr("y2", new_coord[1])
+            ;
+
+         //   let [xs, ys] = numeric.transpose(ndsp.efcy_data);
+         //   let ax = ef.x[id];
+         //   ndsp.efcy_data = numeric.transpose([
+         //       numeric.add(
+         //           xs,
+         //           numeric.mul(
+         //               numeric.mul(
+         //                   e.dx / ndsp.scale_factor ,
+         //                   ax
+         //               ),
+         //               xs
+         //           )
+         //       ),
+         //       numeric.add(
+         //           ys,
+         //           numeric.mul(
+         //               numeric.mul(
+         //                   -e.dy / ndsp.scale_factor  ,
+         //                   ax
+         //               ),
+         //               ys
+         //           )
+         //       )
+         //   ]);
+                    
+
+            // recalculate the positions of the datapoints !
+            ndsp.efcy_data = ef.dot(ndsp.fakeAxes).x;
+            // reposition them.
+            let efcy = timelineSvg.selectAll(".efcy").data(ndsp.efcy_data);
+            efcy
+            .merge(efcy)
+            .attr("cx", d => 
+                ndsp.center_pos[0]+d[0] * layoutHeight/3000)
+            .attr("cy", d => 
+                ndsp.center_pos[1]-d[1] * layoutHeight/3000)
+            ;
+        })
+      //  .on("end", ()=>{
+      //  })
+    )
+    .on("click",()=>{
+        //.attr("cx",(d)=> ndsp.scale_factor*d[0]+ndsp.center_pos[0])
+        //.attr("cy",(d)=> ndsp.scale_factor*d[1]+ndsp.center_pos[1])
+    })
+    ;
+
+
+
+    ndsp.center = timelineSvg.append("circle")
+    .attr("r",5)
+    .attr("cx",ndsp.center_pos[0])
+    .attr("cy",ndsp.center_pos[1])
+    .attr("fill",d3.hsl(0,0,.6) )
+    .attr("stroke","#000")
+    ;
+
+
+
+    return ndsp;
+};
 
 
 // foo is reference code...
@@ -177,8 +346,12 @@ window.drawMap = function(){
     d3cou
     .enter().append('path')
     .attr('class', 'country')
+    .attr('stroke',"#000")
     .attr('fill', d=>d.color)
     .on('mouseenter', (d)=>{
+        // TODO: figure out how to make
+        // all the paths of the outline
+        // change color.
         d3.select(event.target)
         //.attr("fill","sandybrown")
         //.attr("fill","peachpuff")
