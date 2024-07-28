@@ -62,6 +62,8 @@ d3.select('body').append("div")
 
 
 var datasets = {};
+var _wa_proc_done = false;
+var _efotw_proc_done = false;
 
 d3.csv("./data/Inter-StateWarData_v4.0.csv")
 .then(data => {
@@ -89,6 +91,7 @@ let newCou = function( cdat, i ){
             "end": null,
         },
         "ef": [cdat],
+        "map_data": null,
         "map_area": null,
         "map_lines": [],
         "scatter_line": null,
@@ -117,9 +120,11 @@ let procEfotw = function(){
         };
 
     window.countries = [];
+    window._name2country = {}; // should only be used to build the other data structs
     
     let nc =newCou( datasets.efotw[0], 0); // nc, new country
     countries.push(nc);
+    _name2country[nc.name] = nc;
     for (let i=1; i<datasets.efotw.length; i++){
         let nef = datasets.efotw[i]; // nef, new efotw data entry
         if ( nc.name === nef.Countries ){
@@ -128,10 +133,19 @@ let procEfotw = function(){
             nc._ef_index_.end = i;
             nc =newCou( nef, i); 
             countries.push(nc);
+            _name2country[nc.name] = nc;
         }
             
     }
 
+
+    // ready to draw the map if it's loaded
+
+    if ( _wa_proc_done  ){
+        drawMap();
+    } else {
+        _efotw_proc_done = true;
+    }
 
 
 
@@ -286,6 +300,9 @@ let makeNDSP = function(){
             .attr("y2", new_coord[1])
             ;
 
+            // I was trying to be smart and not do the whole
+            // matrix every time... Maybe do it again, it's
+            // pretty expensive calculation.
          //   let [xs, ys] = numeric.transpose(ndsp.efcy_data);
          //   let ax = ef.x[id];
          //   ndsp.efcy_data = numeric.transpose([
@@ -404,9 +421,59 @@ mapSvg.select(".mapBg") .selectAll("path[name='"+cName+"']").attr("fill","pink")
 d3.json('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json')
 .then(data => {
   datasets.worldAtlasCountries = data;
-  drawMap();
+  if ( _efotw_proc_done ){
+      drawMap();
+  } else {
+      _wa_proc_done = true;
+  }
 })
 ;
+
+let wa_name2ef_name = {
+    "W. Sahara": null,
+    "United States of America": "United States",
+    "Uzbekistan": null,
+    "Dem. Rep. Congo": "Congo, Dem. Rep.",
+    "Dominican Rep.": "Dominican Republic",
+    "Russia": "Russian Federation",
+    "Bahamas": "Bahamas, The",
+    "Falkland Is.": null,
+    "Greenland": null,
+    "Fr. S. Antarctic Lands": null,
+    "Venezuela": "Venezuela, RB",
+    "Puerto Rico": null,
+    "Cuba": null,
+    "Central African Rep.": "Central African Republic",
+    "Congo": "Congo, Rep.",
+    "Eq. Guinea": null,
+    "eSwatini":  "Eswatini",
+    "Palestine": null,
+    "Gambia": "Gambia, The",
+    "Vanuatu": null,
+    "Laos": "Lao PDR",
+    "North Korea": null,
+    "South Korea": "Korea, Rep.",
+    "Afghanistan": null,
+    "Kyrgyzstan": "Kyrgyz Republic",
+    "Turkmenistan": null,
+    "Iran": "Iran, Islamic Rep.",
+    "Syria": "Syrian Arab Republic",
+    "Turkey": null,
+    "New Caledonia": null,
+    "Solomon Is.": null,
+    "Brunei": "Brunei Darussalam",
+    "Slovakia": "Slovak Republic",
+    "Eritrea": null,
+    "Yemen": "Yemen, Rep.",
+    "Antarctica": null,
+    "N. Cyprus":  "Cyprus",
+    "Egypt": "Egypt, Arab Rep.",
+    "Somaliland":  "Somalia",
+    "Bosnia and Herz.": "Bosnia and Herzegovina",
+    "Macedonia": "North Macedonia",
+    "Kosovo": null,
+    "S. Sudan":  "Sudan"
+    };
 
 window.drawMap = function(){
 
@@ -426,6 +493,7 @@ window.drawMap = function(){
     let data = datasets.worldAtlasCountries;
     let countries = topojson.feature(data, data.objects.countries);
 
+    // fake made up _values and colors
     countries.features.map( (c) => {
         c._value_ = Math.random()*(1-.1-.4)+.4;
         c.color = d3.hsl(30,0,c._value_);
@@ -466,8 +534,23 @@ window.drawMap = function(){
         .html("")
         ;
     })
-    .attr("name",(e)=>{
-        return( e.properties.name );
+    .attr("name",(d)=>{
+        return( d.properties.name );
+    })
+    .attr("country", (d,i,b,a)=>{
+
+        let cou = _name2country[d.properties.name];
+        if ( cou === undefined ) {
+            cou = _name2country[ wa_name2ef_name[d.properties.name] ];
+            if ( ! cou === undefined ) {
+              cou.map_data = d;
+              cou.map_area = b[i];
+            }
+        } else {
+          cou.map_data = d;
+          cou.map_area = b[i];
+        }
+        return( cou );
     })
     .merge(d3cou)
     .attr('d', pathGenerator)
