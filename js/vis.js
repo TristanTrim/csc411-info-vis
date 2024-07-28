@@ -642,7 +642,7 @@ var testdata2 = [{date: 1976, value: 4}, {date: 1994, value: 9}, {date: 2007, va
 //     return { date: d3.timeParse("%Y")(d.date), value : d.value }
 // };
 
-// attempt at making a basic scatterplot, will tweak to fit our specifications once I can see it...
+// makes a simple line graph, need to tweak still
 window.drawTimeline = function(){
 
     // var svg = d3.select("svg"),
@@ -704,7 +704,7 @@ window.drawTimeline = function(){
 
     timelineSvg.append("path")
       .attr("fill", "none")
-      .attr("stroke", "steelblue")
+      .attr("stroke", "#535966")
       .attr("stroke-width", 1.5)
       .attr("d", line(testdata2));
     
