@@ -627,8 +627,89 @@ window.drawMap = function(){
 
 // war data <--> country data
 
+let cow_name2ef_name = {
+    "Taiwan (ROC)":"Taiwan",
+    "China (PRC)":"China",
+    "United States of America": "United States",
+    "South Korea": "Korea, Rep.",
+    "South Vietnam": "Vietnam",
+    "Egypt": "Egypt, Arab Rep.",
+    "Syria": "Syrian Arab Republic",
+    "Laos": "Lao PDR",
+    "Turkey": null,
+    "Cuba": null,
+    "Democratic Republic of the Congo": "Congo, Dem. Rep.",
+    "Iran": "Iran, Islamic Rep.",
+    "Bosnia": "Bosnia and Herzegovina",
+    "Yugoslavia":"Bosnia and Herz.", // it's not exact 100% the maps were different back then
+    "Eritrea": null,
+    "Afghanistan": null
+    };
+
+
+let newPar = function(entry){
+
+    let par = {};
+
+    par.death = Number(entry.BatDeath);
+    if (par.death == -9) par.death = null;
+    par.start = new Date(entry.StartYear1+"-"+entry.StartMonth1+"-"+entry.StartDay1)
+    par.end = new Date(entry.EndYear1+"-"+entry.EndMonth1+"-"+entry.EndDay1)
+
+    par.war = null; // gets set by caller
+
+    par.country = _name2country[entry.StateName];
+    if (!(par.country)){
+        par.country = _name2country[cow_name2ef_name[entry.StateName]];
+    } // country will still be null if it's null in cow_name2ef_name
+
+    if (par.country){
+        par.cname = par.country.name;
+    } else {
+        par.cname = entry.StateName;
+    }
+
+    par.scatter_lines = []; //TODO
+
+    return par;
+}
+
+let newWar = function(entry){
+
+    let war = {};
+    war.name = entry.WarName;
+    war.id = entry.WarNum;
+    war.start = new Date(entry.StartYear1+"-"+entry.StartMonth1+"-"+entry.StartDay1)
+    war.end = new Date(entry.EndYear1+"-"+entry.EndMonth1+"-"+entry.EndDay1)
+    war.participants = [];
+
+    war.addParticipant = function(centry){
+        let par = newPar(centry);
+        par.war = war;
+        war.participants.push(par);
+        if ( par.start < war.start){ war.start = par.start; }
+        if ( war.end < par.end){ war.end = par.end; }
+    };
+
+    return war;
+};
+
 var connectWarsWithCountries = function(){
-    console.log("nyi");
+
+    window.wars = [];
+
+    let cow = datasets.interStateWarData;
+    let nw = newWar(cow[0]);
+    wars.push(nw);
+    nw.addParticipant(cow[0]);
+    for (let i = 1; i<cow.length; i++){
+        let ncow = cow[i];
+        if (!(nw.name === ncow.WarName)){
+            nw = newWar(ncow);
+            wars.push(nw);
+        }
+        nw.addParticipant(ncow);
+    }
 }
 
 
