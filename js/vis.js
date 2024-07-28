@@ -81,8 +81,61 @@ d3.csv("./data/efotw2023.csv")
     procEfotw();
 });
 
+let newCou = function( cdat, i ){
+    let cob = {
+        "name": cdat.Countries,
+        "_ef_index_": {
+            "start": i,
+            "end": null,
+        },
+        "ef": [cdat],
+        "map_area": null,
+        "map_lines": [],
+        "scatter_line": null,
+        "war_participations": []
+    };
+
+    // TODO: add to lookups here!
+
+
+    return cob;
+};
+
 let procEfotw = function(){
-    let vars_of_interest = [ "1A Government consumption", "1B  Transfers and subsidies", "1C  Government investment", "1Di Top marginal income tax rate", "1Dii Top marginal income and payroll tax rate", "2A  Judicial independence", "2B  Impartial courts", "2C  Property rights", "2D  Military interference", "2E Legal integrity", "2F Contracts", "2G Real property", "2H Police and crime", "3A  Money growth", "3B  Standard deviation of inflation", "3C  Inflation", "3D  Foreign currency bank accounts", "4Ai  Trade tax revenue", "4Aii  Mean tariff rate", "4Aiii  Standard deviation of tariff rates", "4Bi  Non-tariff trade barriers", "4Bii  Costs of importing and exporting", "4C  Black market exchange rates", "4Di  Financial openness", "4Dii  Capital controls", "4Diii Freedom of foreigners to visit", "4Div Protection of Foreign Assets", "5Ai  Ownership of banks", "5Aii Private sector credit", "5Aiii  Interest rate controls/negative real interest rates)", "5Bi  Labor regulations and minimum wage", "5Bii  Hiring and firing regulations", "5Biii  Flexible wage determination", "5Biv  Hours Regulations", "5Bv Cost of worker dismissal", "5Bvi  Conscription", "5Bvii Foreign Labor", "5Ci  Regulatory Burden", "5Cii  Bureacracy costs", "5Ciii  Impartial Public Administration", "5Civ Tax compliance", "5Di  Market openness", "5Dii Business Permits", "5Diii Distorton of the business environment", ] ; // sorry.
+
+    window.axes = {};
+
+    axes._proto_var_lists = {
+        "all44" : [ "1A Government consumption", "1B  Transfers and subsidies", "1C  Government investment", "1Di Top marginal income tax rate", "1Dii Top marginal income and payroll tax rate", "2A  Judicial independence", "2B  Impartial courts", "2C  Property rights", "2D  Military interference", "2E Legal integrity", "2F Contracts", "2G Real property", "2H Police and crime", "3A  Money growth", "3B  Standard deviation of inflation", "3C  Inflation", "3D  Foreign currency bank accounts", "4Ai  Trade tax revenue", "4Aii  Mean tariff rate", "4Aiii  Standard deviation of tariff rates", "4Bi  Non-tariff trade barriers", "4Bii  Costs of importing and exporting", "4C  Black market exchange rates", "4Di  Financial openness", "4Dii  Capital controls", "4Diii Freedom of foreigners to visit", "4Div Protection of Foreign Assets", "5Ai  Ownership of banks", "5Aii Private sector credit", "5Aiii  Interest rate controls/negative real interest rates)", "5Bi  Labor regulations and minimum wage", "5Bii  Hiring and firing regulations", "5Biii  Flexible wage determination", "5Biv  Hours Regulations", "5Bv Cost of worker dismissal", "5Bvi  Conscription", "5Bvii Foreign Labor", "5Ci  Regulatory Burden", "5Cii  Bureacracy costs", "5Ciii  Impartial Public Administration", "5Civ Tax compliance", "5Di  Market openness", "5Dii Business Permits", "5Diii Distorton of the business environment" ] , // sorry.
+        "main5" : [
+            "1  Size of Government",
+            "2  Legal System & Property Rights -- With Gender Adjustment",
+            "2 Legal System & Property Rights - No Gender Adjustment",
+            "3  Sound Money",
+            "4  Freedom to trade internationally",
+            "5  Regulation"]
+        };
+
+    window.countries = [];
+    
+    let nc =newCou( datasets.efotw[0], 0); // nc, new country
+    countries.push(nc);
+    for (let i=1; i<datasets.efotw.length; i++){
+        let nef = datasets.efotw[i]; // nef, new efotw data entry
+        if ( nc.name === nef.Countries ){
+            nc.ef.push(nef);
+        } else {
+            nc._ef_index_.end = i;
+            nc =newCou( nef, i); 
+            countries.push(nc);
+        }
+            
+    }
+
+
+
+
+    // ndsp matrix stuff
 
 
     // tf needs to request data back from the gpu which is probs gonna be slower most of the time
@@ -90,9 +143,9 @@ let procEfotw = function(){
     //let data_of_interest = datasets.efotw.map( d => vars_of_interest.map( i => d[i] ) );
     //window.ef = tf.tensor(data_of_interest,null,'float32')
 
+    window.ef_names = axes._proto_var_lists.main5;
     window.ef = numeric.t(
-            datasets.efotw.map( d => vars_of_interest.map( i => d[i] )));
-    window.ef_names = vars_of_interest;
+            datasets.efotw.map( d => ef_names.map( i => d[i] )));
 
     window.ndsp = makeNDSP();
 
@@ -118,10 +171,11 @@ let makeNDSP = function(){
     // axes
 
     ndsp.fakeAxes = [];
-    for (let i=0;i<44;i++){
+    let nax = ef_names.length;
+    for (let i=0;i<nax;i++){
         ndsp.fakeAxes.push([
-            -15*i/44 + 7.4,
-            .5+.1* (22-Math.abs(i-22)) * Math.random() ]);
+            -15*i/nax + 7.4,
+            .5+.3* (10-Math.abs(i-10)) * Math.random() ]);
     }
 
 
@@ -156,6 +210,7 @@ let makeNDSP = function(){
 
     ndsp.efcy_data = ef.dot(ndsp.fakeAxes).x;
 
+        // TODO: this should not be duplicated by below behavior
     dataLayer.selectAll(".efcy").data(ndsp.efcy_data)
     .enter()
     .append("circle")
@@ -163,9 +218,9 @@ let makeNDSP = function(){
     .attr("fill",d3.hsl(0,0,1,.5))
     .attr("r",0.7)
     .attr("cx", d => 
-        ndsp.center_pos[0]+d[0] * layoutHeight/3000)
+        ndsp.center_pos[0]+d[0] * layoutHeight/1000)
     .attr("cy", d => 
-        ndsp.center_pos[1]-d[1] * layoutHeight/3000)
+        ndsp.center_pos[1]-d[1] * layoutHeight/1000)
     ;
 
 
@@ -261,12 +316,14 @@ let makeNDSP = function(){
             ndsp.efcy_data = ef.dot(ndsp.fakeAxes).x;
             // reposition them.
             let efcy = timelineSvg.selectAll(".efcy").data(ndsp.efcy_data);
+            // TODO: this should normalize on furthest point
+            // and should not be duplicating above functionality
             efcy
             .merge(efcy)
             .attr("cx", d => 
-                ndsp.center_pos[0]+d[0] * layoutHeight/3000)
+                ndsp.center_pos[0]+d[0] * layoutHeight/1000)
             .attr("cy", d => 
-                ndsp.center_pos[1]-d[1] * layoutHeight/3000)
+                ndsp.center_pos[1]-d[1] * layoutHeight/1000)
             ;
         })
       //  .on("end", ()=>{
@@ -500,3 +557,5 @@ window.mapSvg = mapSvg;
 window.timelineSvg = timelineSvg;
 window.datasets = datasets;
 
+// ...
+// ...
