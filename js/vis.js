@@ -516,7 +516,7 @@ let wa_name2ef_name = {
     "Bosnia and Herz.": "Bosnia and Herzegovina",
     "Macedonia": "North Macedonia",
     "Kosovo": null,
-    "S. Sudan":  "Sudan"
+    "S. Sudan":  null // idk what's up with sudan & south sudan, but they aren't the same "Sudan"
     };
 
 window.drawMap = function(){
