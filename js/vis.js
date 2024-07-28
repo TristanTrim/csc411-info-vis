@@ -239,8 +239,36 @@ let makeNDSP = function(){
 
     ndsp.efcy_data = ef.dot(ndsp.fakeAxes).x;
 
+
+    ndsp.positionedPoints =
+        numeric.mul(
+            ndsp.efcy_data,
+            layoutHeight/1000
+        ).map(
+            ([x,y])=>[
+                ndsp.center_pos[0]+x,
+                ndsp.center_pos[1]-y,
+            ]
+        );
+
+    dataLayer.selectAll(".efcyPath").data(countries)
+    .enter()
+    .append("path")
+    .attr("class","efcyPath")
+    .attr("fill","rgb(0,0,0,0)")
+    .attr("stroke",d3.hsl(0,0,1,.1))
+    .attr("stroke-width",0.7)
+    .attr('d', (d,i,b)=>{
+        let path_data = ndsp.positionedPoints.slice(
+            d._ef_index_.start,
+            d._ef_index_.end
+        );
+        d.scatter_line = b[i];
+        return d3.line()(path_data);
+    })
+    ;
         // TODO: this should not be duplicated by below behavior
-    dataLayer.selectAll(".efcy").data(ndsp.efcy_data)
+    dataLayer.selectAll(".efcy").data(ndsp.positionedPoints)
     .enter()
     .append("circle")
     .attr("class","efcy")
@@ -250,11 +278,9 @@ let makeNDSP = function(){
         return cou;
     })
     .attr("fill",d3.hsl(0,0,1,.1))
-    .attr("r",0.7)
-    .attr("cx", d => 
-        ndsp.center_pos[0]+d[0] * layoutHeight/1000)
-    .attr("cy", d => 
-        ndsp.center_pos[1]-d[1] * layoutHeight/1000)
+    .attr("r",1)
+    .attr("cx", d => d[0])
+    .attr("cy", d => d[1])
     ;
 
 
@@ -352,16 +378,39 @@ let makeNDSP = function(){
 
             // recalculate the positions of the datapoints !
             ndsp.efcy_data = ef.dot(ndsp.fakeAxes).x;
+
             // reposition them.
-            let efcy = timelineSvg.selectAll(".efcy").data(ndsp.efcy_data);
+
+            ndsp.positionedPoints =
+                numeric.mul(
+                    ndsp.efcy_data,
+                    layoutHeight/1000
+                ).map(
+                    ([x,y])=>[
+                        ndsp.center_pos[0]+x,
+                        ndsp.center_pos[1]-y,
+                    ]
+                );
+
+            let efcy = dataLayer.selectAll(".efcyPath").data(countries)
+            efcy
+            .merge(efcy)
+            .attr('d', (d)=>{
+                let path_data = ndsp.positionedPoints.slice(
+                    d._ef_index_.start,
+                    d._ef_index_.end
+                );
+                return d3.line()(path_data);
+            })
+            ;
+
+            efcy = timelineSvg.selectAll(".efcy").data(ndsp.positionedPoints);
             // TODO: this should normalize on furthest point
             // and should not be duplicating above functionality
             efcy
             .merge(efcy)
-            .attr("cx", d => 
-                ndsp.center_pos[0]+d[0] * layoutHeight/1000)
-            .attr("cy", d => 
-                ndsp.center_pos[1]-d[1] * layoutHeight/1000)
+            .attr("cx", d => d[0])
+            .attr("cy", d => d[1])
             ;
 
             for (const cou of countries){
@@ -571,6 +620,10 @@ window.drawMap = function(){
             d3.selectAll(e.target.country.scatter_points)
             .attr("fill","orange").attr("r",2)
             ;
+            d3.select(e.target.country.scatter_line)
+            .attr("stroke","orange")
+            .attr("stroke-width",1.5)
+            ;
         }
     })
     .on('mousemove',(e)=>{
@@ -595,6 +648,10 @@ window.drawMap = function(){
             d3.selectAll(e.target.country.scatter_points)
             .attr("fill",d3.hsl(0,0,1,.1))
             .attr("r",0.7)
+            ;
+            d3.select(e.target.country.scatter_line)
+            .attr("stroke",d3.hsl(0,0,1,.1))
+            .attr("stroke-width",0.7)
             ;
         }
     })
