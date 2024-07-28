@@ -401,8 +401,9 @@ let makeNDSP = function(){
     .attr("r",5)
     .attr("cx",ndsp.center_pos[0])
     .attr("cy",ndsp.center_pos[1])
-    .attr("fill",d3.hsl(0,0,.6) )
-    .attr("stroke","#000")
+    .attr("fill",d3.hsl(0,0,.6,.5) )
+    .attr("stroke",d3.hsl(0,0,0,.5))
+    .style("pointer-events", "none") // should be able to drag axis handles out from center
     ;
 
 
@@ -550,14 +551,19 @@ window.drawMap = function(){
     .attr('stroke',"#000")
     .attr('fill', d=>d.color)
     .on('mouseenter', (e)=>{
-        // TODO: figure out how to make
-        // all the paths of the outline
-        // change color.
-        d3.select(e.target)
-        //.attr("fill","sandybrown")
-        //.attr("fill","peachpuff")
-        .attr("fill",(d)=>d3.hsl(30,0.8,d._value_))
-        ;
+
+        let mHL = e.target.cloneNode();
+        mHL.setAttribute("id","mHL");
+        mHL.setAttribute("stroke","#fa0");
+        mHL.style.setProperty("pointer-events", "none")
+        mapSvg.append(()=>mHL);
+        
+     //   d3.select(e.target)
+     //   //.attr("fill","sandybrown")
+     //   //.attr("fill","peachpuff")
+     //   .attr("fill",(d)=>d3.hsl(30,0.8,d._value_))
+     //   .attr("stroke","#fa0")
+     //   ;
         d3.select(".countryTitle")
         .html(e.target.getAttribute("name"))
         ;
@@ -576,9 +582,12 @@ window.drawMap = function(){
         ;
     })
     .on('mouseleave', (e)=>{
-        d3.select(e.target)
-        .attr('fill', d=>d.color)
-        ;
+
+        d3.select("#mHL").remove();
+
+    //    d3.select(e.target)
+    //    .attr('fill', d=>d.color)
+    //    ;
         d3.select(".countryTitle")
         .html("")
         ;
