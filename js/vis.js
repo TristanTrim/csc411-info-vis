@@ -417,7 +417,11 @@ window.drawMap = function(){
     ;
 };
 
-var testdata = [[1975,2], [1999,4], [2005,5], [2015,1], [2009,9]];
+var testdata = [[date, value], [1975,2], [1999,4], [2005,5], [2015,1], [2009,9]];
+
+// function(d){
+//     return { date: d3.timeParse("%Y")(d.date), value : d.value }
+// };
 
 // attempt at making a basic scatterplot, will tweak to fit our specifications once I can see it...
 window.drawTimeline = function(){
@@ -474,6 +478,16 @@ window.drawTimeline = function(){
     .attr("r", 2)
     .attr("transform", "translate(" + 100 + "," + 100 + ")")
     .style("fill", "#CC0000");
+
+    // const line = d3.line()
+    // .x(d => x(d.date))
+    // .y(d => y(d.value));
+
+    // timelineSvg.append("path")
+    //   .attr("fill", "none")
+    //   .attr("stroke", "steelblue")
+    //   .attr("stroke-width", 1.5)
+    //   .attr("d", d3.line(testdata));
     
 
 }
