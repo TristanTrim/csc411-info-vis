@@ -63,11 +63,17 @@ d3.select('body').append("div")
 
 var datasets = {};
 var _wa_proc_done = false;
-var _efotw_proc_done = false;
+var _efotw_proc_done_ = false;
+var _cowisw_proc_done_ = false;
 
 d3.csv("./data/Inter-StateWarData_v4.0.csv")
 .then(data => {
     datasets.interStateWarData = data;
+    if ( _efotw_proc_done_ ){
+        connectWarsWithCountries();
+    } else {
+        _cowisw_proc_done_ = true;
+    }
 });
 d3.csv("./data/COW-country-codes.csv")
 .then(data => {
@@ -95,6 +101,7 @@ let newCou = function( cdat, i ){
         "map_area": null,
         "map_lines": [],
         "scatter_line": null,
+        "scatter_points": [],
         "war_participations": []
     };
 
@@ -105,6 +112,51 @@ let newCou = function( cdat, i ){
 };
 
 let procEfotw = function(){
+
+
+    window.countries = [];
+    window._name2country = {}; // should only be used to build the other data structs
+    window._ef_i2country = [];
+    
+    let nc =newCou( datasets.efotw[0], 0); // nc, new country
+    countries.push(nc);
+    _ef_i2country.push(nc);
+    _name2country[nc.name] = nc;
+    for (let i=1; i<datasets.efotw.length; i++){
+        let nef = datasets.efotw[i]; // nef, new efotw data entry
+        if ( nc.name === nef.Countries ){
+            nc.ef.push(nef);
+        } else {
+            nc._ef_index_.end = i;
+            nc =newCou( nef, i); 
+            countries.push(nc);
+            _name2country[nc.name] = nc;
+        }
+        _ef_i2country.push(nc);
+
+    }
+    nc._ef_index_.end = datasets.efotw.length;
+
+
+    // ready to draw the map if it's loaded
+    if ( _wa_proc_done  ){
+        drawMap();
+    }
+    _efotw_proc_done_ = true;
+    // ready to link with war data if it's loaded
+    if ( _cowisw_proc_done_ ){
+        connectWarsWithCountries();
+    }
+
+
+    // ndsp matrix stuff
+
+
+    window.ndsp = makeNDSP();
+
+};
+
+let makeNDSP = function(){
 
     window.axes = {};
 
@@ -119,38 +171,6 @@ let procEfotw = function(){
             "5  Regulation"]
         };
 
-    window.countries = [];
-    window._name2country = {}; // should only be used to build the other data structs
-    
-    let nc =newCou( datasets.efotw[0], 0); // nc, new country
-    countries.push(nc);
-    _name2country[nc.name] = nc;
-    for (let i=1; i<datasets.efotw.length; i++){
-        let nef = datasets.efotw[i]; // nef, new efotw data entry
-        if ( nc.name === nef.Countries ){
-            nc.ef.push(nef);
-        } else {
-            nc._ef_index_.end = i;
-            nc =newCou( nef, i); 
-            countries.push(nc);
-            _name2country[nc.name] = nc;
-        }
-            
-    }
-
-
-    // ready to draw the map if it's loaded
-
-    if ( _wa_proc_done  ){
-        drawMap();
-    } else {
-        _efotw_proc_done = true;
-    }
-
-
-
-    // ndsp matrix stuff
-
 
     // tf needs to request data back from the gpu which is probs gonna be slower most of the time
     
@@ -161,11 +181,6 @@ let procEfotw = function(){
     window.ef = numeric.t(
             datasets.efotw.map( d => ef_names.map( i => d[i] )));
 
-    window.ndsp = makeNDSP();
-
-};
-
-let makeNDSP = function(){
 
     let ndsp = {};
 
@@ -229,7 +244,12 @@ let makeNDSP = function(){
     .enter()
     .append("circle")
     .attr("class","efcy")
-    .attr("fill",d3.hsl(0,0,1,.5))
+    .attr("country", (d,i,b)=>{
+        let cou = _ef_i2country[i];
+        cou.scatter_points.push(b[i]);
+        return cou;
+    })
+    .attr("fill",d3.hsl(0,0,1,.1))
     .attr("r",0.7)
     .attr("cx", d => 
         ndsp.center_pos[0]+d[0] * layoutHeight/1000)
@@ -260,6 +280,7 @@ let makeNDSP = function(){
     .append("circle")
     .attr("class","axisCircle")
     .attr("id",(d,i)=>i)
+    .attr("name",(d,i)=>ef_names[i])
     .attr("r",8)
     .attr("fill",d3.hsl(0,0,.1,.1) )
     .attr("stroke",d3.hsl(0,0,.1) )
@@ -342,6 +363,16 @@ let makeNDSP = function(){
             .attr("cy", d => 
                 ndsp.center_pos[1]-d[1] * layoutHeight/1000)
             ;
+
+            for (const cou of countries){
+                if ( cou.map_area ){
+                  //let val = numeric.mean(ndsp.efcy_data.slice(
+                  let val = (ndsp.efcy_data[cou._ef_index_.start][1] + 20) / 200;
+                  cou.map_data.color = d3.hsl(0,0,val );
+                  cou.map_area.setAttribute("fill",d3.hsl(0,0,val));
+                }
+            }
+
         })
       //  .on("end", ()=>{
       //  })
@@ -349,6 +380,18 @@ let makeNDSP = function(){
     .on("click",()=>{
         //.attr("cx",(d)=> ndsp.scale_factor*d[0]+ndsp.center_pos[0])
         //.attr("cy",(d)=> ndsp.scale_factor*d[1]+ndsp.center_pos[1])
+    })
+    .on('mouseenter', (e)=>{
+        d3.select(".countryTitle")
+        .style("left",(ndsp.center_pos[0] - .4*layoutTimelineHeight)+"px")
+        .style("top",(ndsp.center_pos[1] + .5*layoutTimelineHeight)+"px")
+        .html(e.target.getAttribute("name"))
+        ;
+    })
+    .on('mouseleave', (e)=>{
+        d3.select(".countryTitle")
+        .html()
+        ;
     })
     ;
 
@@ -421,7 +464,7 @@ mapSvg.select(".mapBg") .selectAll("path[name='"+cName+"']").attr("fill","pink")
 d3.json('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json')
 .then(data => {
   datasets.worldAtlasCountries = data;
-  if ( _efotw_proc_done ){
+  if ( _efotw_proc_done_ ){
       drawMap();
   } else {
       _wa_proc_done = true;
@@ -495,8 +538,9 @@ window.drawMap = function(){
 
     // fake made up _values and colors
     countries.features.map( (c) => {
-        c._value_ = Math.random()*(1-.1-.4)+.4;
-        c.color = d3.hsl(30,0,c._value_);
+        //c._value_ = Math.random()*(1-.1-.4)+.4;
+        //c.color = d3.hsl(30,0,c._value_);
+        c.color = d3.hsl(180,.3,.3);
         });
 
     let d3cou = mapBg.selectAll('.country').data(countries.features);
@@ -517,6 +561,11 @@ window.drawMap = function(){
         d3.select(".countryTitle")
         .html(e.target.getAttribute("name"))
         ;
+        if ( e.target.country ){
+            d3.selectAll(e.target.country.scatter_points)
+            .attr("fill","orange").attr("r",2)
+            ;
+        }
     })
     .on('mousemove',(e)=>{
         d3.select(".countryTitle")
@@ -533,22 +582,30 @@ window.drawMap = function(){
         d3.select(".countryTitle")
         .html("")
         ;
+        if ( e.target.country ){
+            d3.selectAll(e.target.country.scatter_points)
+            .attr("fill",d3.hsl(0,0,1,.1))
+            .attr("r",0.7)
+            ;
+        }
     })
     .attr("name",(d)=>{
         return( d.properties.name );
     })
-    .attr("country", (d,i,b,a)=>{
+    .attr("country", (d,i,b)=>{
 
         let cou = _name2country[d.properties.name];
         if ( cou === undefined ) {
             cou = _name2country[ wa_name2ef_name[d.properties.name] ];
-            if ( ! cou === undefined ) {
+            if ( ! (cou === undefined) ) {
               cou.map_data = d;
               cou.map_area = b[i];
+              b[i].country = cou;
             }
         } else {
           cou.map_data = d;
           cou.map_area = b[i];
+          b[i].country = cou;
         }
         return( cou );
     })
@@ -556,6 +613,16 @@ window.drawMap = function(){
     .attr('d', pathGenerator)
     ;
 };
+
+
+// war data <--> country data
+
+var connectWarsWithCountries = function(){
+    console.log("nyi");
+}
+
+
+// timeline
 
 var testdata = [[1975,2], [1999,4], [2005,5], [2015,1], [2009,9]];
 
