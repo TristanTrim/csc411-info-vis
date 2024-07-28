@@ -474,7 +474,8 @@ window.drawMap = function(){
     ;
 };
 
-var testdata = [[date, value], [1975,2], [1999,4], [2005,5], [2015,1], [2009,9]];
+//var testdata = [[1975,2], [1999,4], [2005,5], [2015,1], [2009,9]];
+var testdata2 = [{date: 1976, value: 4}, {date: 1994, value: 9}, {date: 2007, value: 1}];
 
 // function(d){
 //     return { date: d3.timeParse("%Y")(d.date), value : d.value }
@@ -520,31 +521,32 @@ window.drawTimeline = function(){
     timelineSvg.append("g")
         .attr("transform", "translate(0," + layoutTimelineHeight*7/8 + ")")
         .call(d3.axisBottom(xScale));
-        
+
+    // customization features to tweak
     // timelineSvg.append("g")
-    //     .attr("transform", "translate(" + layoutTimelineWidth/15 + "2000)")
-    //     .call(d3.axisLeft(yScale));
+    //     .attr("transform", `translate(${marginLeft},0)`)
+    //     .call(d3.axisLeft(y).ticks(height / 40))
+    //     .call(g => g.select(".domain").remove())
+    //     .call(g => g.selectAll(".tick line").clone()
+    //         .attr("x2", width - marginLeft - marginRight)
+    //         .attr("stroke-opacity", 0.1))
+    //     .call(g => g.append("text")
+    //         .attr("x", -marginLeft)
+    //         .attr("y", 10)
+    //         .attr("fill", "currentColor")
+    //         .attr("text-anchor", "start")
+    //         .text("↑ Daily close ($)"));
 
-    timelineSvg.append('g')
-    .selectAll("dot")
-    .data(testdata)
-    .enter()
-    .append("circle")
-    .attr("cx", function (d) { return xScale(d[0]); } )
-    .attr("cy", function (d) { return yScale(d[1]); } )
-    .attr("r", 2)
-    .attr("transform", "translate(" + 100 + "," + 100 + ")")
-    .style("fill", "#CC0000");
+    const line = d3.line()
+        .x((d) => xScale(d.date))
+        .y((d) => yScale(d.value));
 
-    // const line = d3.line()
-    // .x(d => x(d.date))
-    // .y(d => y(d.value));
-
-    // timelineSvg.append("path")
-    //   .attr("fill", "none")
-    //   .attr("stroke", "steelblue")
-    //   .attr("stroke-width", 1.5)
-    //   .attr("d", d3.line(testdata));
+    timelineSvg.append("path")
+      .attr("fill", "none")
+      .attr("stroke", "steelblue")
+      .attr("stroke-width", 1.5)
+      .attr("d", line(testdata2));
+    
     
 
 }
