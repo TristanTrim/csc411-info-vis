@@ -511,7 +511,7 @@ let wa_name2ef_name = {
     "Antarctica": null,
     "N. Cyprus":  "Cyprus",
     "Egypt": "Egypt, Arab Rep.",
-    "Somaliland":  "Somalia",
+    "Somaliland":  null, // apparently somaliland is a democracy that broke from "Somalia",
     "Bosnia and Herz.": "Bosnia and Herzegovina",
     "Macedonia": "North Macedonia",
     "Kosovo": null,
