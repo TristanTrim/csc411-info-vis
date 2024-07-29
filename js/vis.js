@@ -154,13 +154,13 @@ let procEfotw = function(){
     // ndsp matrix stuff
 
 
-    window.ndsp = makeNDSP();
+    makeNDSP("main5");
 
     for (const cb of _wa_callbacks){ cb(); }
 
 };
 
-let makeNDSP = function(){
+window.makeNDSP = function(axchoice){
 
     window.axes = {};
 
@@ -181,7 +181,7 @@ let makeNDSP = function(){
     //let data_of_interest = datasets.efotw.map( d => vars_of_interest.map( i => d[i] ) );
     //window.ef = tf.tensor(data_of_interest,null,'float32')
 
-    window.ef_names = axes._proto_var_lists.main5;
+    window.ef_names = axes._proto_var_lists[axchoice];
     window.ef = numeric.t(
             datasets.efotw.map( d => ef_names.map( i => d[i] )));
 
@@ -322,6 +322,7 @@ let makeNDSP = function(){
             ndsp.dragged = event.target;
         })
         .on("drag", (e)=>{
+
             let id = ndsp.dragged.id;
             ndsp.fakeAxes[id] = numeric.add(
                     ndsp.fakeAxes[id],
@@ -408,7 +409,7 @@ let makeNDSP = function(){
             })
             ;
 
-            efcy = timelineSvg.selectAll(".efcy").data(ndsp.positionedPoints);
+            efcy = dataLayer.selectAll(".efcy").data(ndsp.positionedPoints);
             // TODO: this should normalize on furthest point
             // and should not be duplicating above functionality
             efcy
@@ -464,8 +465,27 @@ let makeNDSP = function(){
 
 
 
-    return ndsp;
+    window.ndsp = ndsp;
 };
+
+
+d3.select('body').append("a")
+.attr("class","ndspChoice")
+.style("position","absolute")
+.style("text-shadow", Array(13).fill("0px 0px 3px #fff").join(",") ) // That's css uwu
+.style("left",layoutWidth-layoutTimelineHeight+5+"px")
+.style("top",layoutHeight-20+"px")
+.attr("fill","black")
+.attr("z",10)
+.html("44-dim")
+.attr("href","javascript:makeNDSP('all44');")
+//.attr("href","")
+//.on("click",(e)=>{
+//    console.log("hmm");
+//    makeNDSP("all44");
+//})
+;
+
 
 
 // foo is reference code...
@@ -960,12 +980,14 @@ window.drawTimeline2 = function() {
     .attr("height", layoutTimelineHeight*7/8)
     .attr("fill","rgb(200,0,0,.2)")
     ;
-    let warLi = timelineSvg.selectAll(".warLi")
-    .data(wars);
-    warLi
+    let warLi = timelineSvg.selectAll(".warLi").data(wars);
+    let warLiG = warLi
     .enter()
-    .append("line")
+    .append("g")
     .attr("class","warLi")
+    ;
+    warLiG
+    .append("line")
     .attr("id",(d,i,b)=>{
         d.tl_line = b[i];
         b[i]._war = d;
@@ -975,21 +997,27 @@ window.drawTimeline2 = function() {
     .attr("y1",10)
     .attr("x2",d=> xScale(d.end))
     .attr("y2",30)
-    .attr("stroke","rgb(200,0,0)")
-    .attr("stroke-width",7)
+    .attr("stroke",d3.hsl(0,.2,.3))
+    .attr("stroke-width",12)
+    .attr("stroke-linecap","square")
     .on("mouseenter",(e)=>{
-        console.log(e);
+        let war = e.target._war;
+        let msg = [];
         for (const coupar of e.target._war.participants){
-            console.log(coupar);
             if(coupar.country){
               d3.select(coupar.country.map_area)
               .attr("fill",d3.hsl(30,0.8,coupar.country._value_))
               ;
             }
+            msg.push(coupar.cname+" -- "+coupar.death+"<b> 🕱</b>");
         }
+        d3.select(".countryTitle")
+        .style("left",(e.clientX-30)+"px")
+        .style("top",(e.clientY+20)+"px")
+        .html(war.name+"<ul><li>"+msg.join("</li><li>")+"</li></ul>")
+        ;
     })
     .on("mouseleave",(e)=>{
-        console.log(e);
         for (const coupar of e.target._war.participants){
             console.log(coupar);
             if(coupar.country){
@@ -998,8 +1026,22 @@ window.drawTimeline2 = function() {
               ;
             }
         }
+        d3.select(".countryTitle")
+        .html("")
+        ;
     })
     ;
+    warLiG
+    .append("line")
+    .attr("x1",d=> xScale(d.start))
+    .attr("y1",10)
+    .attr("x2",d=> xScale(d.end))
+    .attr("y2",30)
+    .attr("stroke","rgb(200,0,0)")
+    .attr("stroke-width",7)
+    .style("pointer-events", "none") // when moving mouse down don't mouseover this text preventing events below.
+    ;
+
 
 
 }
