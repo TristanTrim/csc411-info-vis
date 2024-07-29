@@ -773,23 +773,33 @@ var connectWarsWithCountries = function(){
 
 // timeline
 
-//var testdata = [[1975,2], [1999,4], [2005,5], [2015,1], [2009,9]];
-var testdata2 = [{date: 1976, value: 4}, {date: 1994, value: 9}, {date: 2007, value: 1}];
+var testData = [
+	{label: "person a", times: [
+		{"starting_time": 1355752800000, "ending_time": 1355759900000},
+		{"starting_time": 1355767900000, "ending_time": 1355774400000}]},
+	{label: "person b", times: [
+		{"starting_time": 1355759910000, "ending_time": 1355761900000}]},
+	{label: "person c", times: [
+		{"starting_time": 1355761910000, "ending_time": 1355763910000}]}
+	];
+
+var testData2 = [{date: 1970, value: 0}, {date: 1976, value: 4}, {date: 1994, value: 9}, {date: 2007, value: 1}, {date: 2024, value: 10}];
 
 // function(d){
 //     return { date: d3.timeParse("%Y")(d.date), value : d.value }
 // };
 
 // makes a simple line graph, need to tweak still
-window.drawTimeline = function(){
+window.drawTimeline1 = function(){
 
     // var svg = d3.select("svg"),
     //     margin = 200,
     //     width = layoutTimelineWidth, //svg.attr("width") - margin,
     //     height = layoutTimelineHeight; //svg.attr("height") - margin
 
+    // Data area scaling
     var xScale = d3.scaleLinear().domain([1970, 2024]).range([50, layoutTimelineWidth*3/4 -75]),
-        yScale = d3.scaleLinear().domain([0, 10]).range([layoutTimelineHeight/2, 0]);
+        yScale = d3.scaleLinear().domain([0, 10]).range([layoutTimelineHeight*7/8, 0]);
 
     // Title
     // timelineSvg.append('text')
@@ -817,9 +827,13 @@ window.drawTimeline = function(){
     // .style('font-size', 12)
     // .text('Dependant');
 
+    // X axis line
     timelineSvg.append("g")
         .attr("transform", "translate(0," + layoutTimelineHeight*7/8 + ")")
-        .call(d3.axisBottom(xScale));
+        .call(d3.axisBottom(xScale)
+        .ticks(layoutTimelineWidth / 250)
+        //.tickFormat(d => d.getFullYear())
+        .tickSizeOuter(0));
 
     // customization features to tweak
     // timelineSvg.append("g")
@@ -836,21 +850,41 @@ window.drawTimeline = function(){
     //         .attr("text-anchor", "start")
     //         .text("↑ Daily close ($)"));
 
+    // Line generator
     const line = d3.line()
         .x((d) => xScale(d.date))
         .y((d) => yScale(d.value));
 
+    // Line
     timelineSvg.append("path")
       .attr("fill", "none")
       .attr("stroke", "#535966")
       .attr("stroke-width", 1.5)
-      .attr("d", line(testdata2));
+      .attr("d", line(testData2));
     
     
 
 }
 
-drawTimeline();
+window.drawTimeline2 = function() {
+
+    var xScale = d3.scaleLinear().domain([1970, 2024]).range([50, layoutTimelineWidth*3/4 -75]),
+        yScale = d3.scaleLinear().domain([0, 10]).range([layoutTimelineHeight*7/8, 0]);
+
+    timelineSvg.selectAll("myRect")
+    .data(testData2)
+    .enter()
+    .append("rect")
+    .attr("x", xScale(0) )
+    .attr("y", function(d) { return yScale(d.value); })
+    .attr("width", function(d) { return xScale(d.date); })
+    //.attr("height", yScale.bandwidth() )
+    .attr("fill", "#69b3a2")
+
+}
+
+drawTimeline2();
+drawTimeline1();
 
 // export stuff for access later & in web console.
 window.d3 = d3;
