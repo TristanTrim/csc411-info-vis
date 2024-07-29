@@ -63,6 +63,7 @@ d3.select('body').append("div")
 
 var datasets = {};
 var _wa_proc_done = false;
+var _wa_callbacks = [];
 var _efotw_proc_done_ = false;
 var _cowisw_proc_done_ = false;
 
@@ -153,6 +154,8 @@ let procEfotw = function(){
 
 
     window.ndsp = makeNDSP();
+
+    for (const cb of _wa_callbacks){ cb(); }
 
 };
 
@@ -421,6 +424,8 @@ let makeNDSP = function(){
                   cou.map_area.setAttribute("fill",d3.hsl(0,0,val));
                 }
             }
+
+            drawLinesOnTimeline();
 
         })
       //  .on("end", ()=>{
@@ -858,24 +863,49 @@ window.drawTimeline1 = function(){
 
     // Line generator
     const line = d3.line()
-        .x((d) => xScale(d.date))
-        .y((d) => yScale(d.value));
+        .x((d) => xScale(d[0]))
+        //.y((d) => yScale(d.value))
+        .y((d) => d[1])
+        ;
 
+    
+    drawLinesOnTimeline._line = line;
+    drawLinesOnTimeline();
+};
+window.drawLinesOnTimeline = function(){
+
+    let couTL = timelineSvg.selectAll(".couTimeline").data(countries);
+    couTL
+    .enter()
     // Line
-    timelineSvg.append("path")
-      .attr("fill", "none")
-      .attr("stroke", "#535966")
-      .attr("stroke-width", 1.5)
-      .attr("d", line(testData2));
-    
-    
+    .append("path")
+    .attr("class","couTimeline")
+    .attr("fill", "none")
+    .attr("stroke", "#535966")
+    .attr("stroke-width", 1.5)
+    .merge(couTL)
+    .attr("d", (d) => {
+        let ydata = ndsp.positionedPoints.slice(
+            d._ef_index_.start,
+            d._ef_index_.end
+        ).map( ([x,y]) => y );
 
-}
+        let xdata = d.ef.map(x=>x.Year);
+
+        let linedata = numeric.transpose(
+            [xdata, ydata] );
+            
+        return drawLinesOnTimeline._line(linedata);
+    })
+    ;
+
+};
 
 window.drawTimeline2 = function() {
 
     var xScale = d3.scaleLinear().domain([1970, 2024]).range([50, layoutTimelineWidth*3/4 -75]),
-        yScale = d3.scaleLinear().domain([0, 10]).range([layoutTimelineHeight*7/8, 0]);
+        yScale = d3.scaleLinear().domain([0, 100]).range([layoutTimelineHeight*7/8, 0]);
+        // TODO: the yScale here is not going to be right...
 
     timelineSvg.selectAll("myRect")
     .data(testData2)
@@ -889,8 +919,14 @@ window.drawTimeline2 = function() {
 
 }
 
-drawTimeline2();
-drawTimeline1();
+if ( _wa_proc_done ){
+  drawTimeline2();
+  drawTimeline1();
+}else{
+  _wa_callbacks.push( drawTimeline2 );
+  _wa_callbacks.push( drawTimeline1 );
+}
+      
 
 // export stuff for access later & in web console.
 window.d3 = d3;
@@ -898,5 +934,3 @@ window.mapSvg = mapSvg;
 window.timelineSvg = timelineSvg;
 window.datasets = datasets;
 
-// ...
-// ...
