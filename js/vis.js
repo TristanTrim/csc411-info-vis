@@ -421,6 +421,7 @@ let makeNDSP = function(){
                 if ( cou.map_area ){
                   //let val = numeric.mean(ndsp.efcy_data.slice(
                   let val = (ndsp.efcy_data[cou._ef_index_.start][1] + 20) / 200;
+                  cou._value_ = val;
                   cou.map_data.color = d3.hsl(0,0,val );
                   cou.map_area.setAttribute("fill",d3.hsl(0,0,val));
                 }
@@ -943,6 +944,22 @@ window.drawTimeline2 = function() {
     var xAxis = d3.axisBottom(xScale);
 
 
+    let warBo = timelineSvg.selectAll(".warBo")
+    .data(wars);
+    warBo
+    .enter()
+    .append("rect")
+    .attr("class","warBo")
+    .attr("id",(d,i,b)=>{
+        d.tl_rect = b[i];
+        return("warBo"+i);
+    })
+    .attr("x",d=> xScale(d.start))
+    .attr("y",10)
+    .attr("width", d=> ( xScale(d.end) - xScale(d.start) ))
+    .attr("height", layoutTimelineHeight*7/8)
+    .attr("fill","rgb(200,0,0,.2)")
+    ;
     let warLi = timelineSvg.selectAll(".warLi")
     .data(wars);
     warLi
@@ -961,24 +978,27 @@ window.drawTimeline2 = function() {
     .attr("stroke","rgb(200,0,0)")
     .attr("stroke-width",7)
     .on("mouseenter",(e)=>{
-        console.log(e.target._war);
-    });
-    ;
-    let warBo = timelineSvg.selectAll(".warBo")
-    .data(wars);
-    warBo
-    .enter()
-    .append("rect")
-    .attr("class","warBo")
-    .attr("id",(d,i,b)=>{
-        d.tl_rect = b[i];
-        return("warBo"+i);
+        console.log(e);
+        for (const coupar of e.target._war.participants){
+            console.log(coupar);
+            if(coupar.country){
+              d3.select(coupar.country.map_area)
+              .attr("fill",d3.hsl(30,0.8,coupar.country._value_))
+              ;
+            }
+        }
     })
-    .attr("x",d=> xScale(d.start))
-    .attr("y",10)
-    .attr("width", d=> ( xScale(d.end) - xScale(d.start) ))
-    .attr("height", layoutTimelineHeight*7/8)
-    .attr("fill","rgb(200,0,0,.2)")
+    .on("mouseleave",(e)=>{
+        console.log(e);
+        for (const coupar of e.target._war.participants){
+            console.log(coupar);
+            if(coupar.country){
+              d3.select(coupar.country.map_area)
+              .attr("fill",d3.hsl(30,0,coupar.country._value_))
+              ;
+            }
+        }
+    })
     ;
 
 
