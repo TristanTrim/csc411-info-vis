@@ -745,11 +745,15 @@ let newPar = function(entry){
 
 let newWar = function(entry){
 
+
     let war = {};
+
     war.name = entry.WarName;
     war.id = entry.WarNum;
-    war.start = new Date(entry.StartYear1+"-"+entry.StartMonth1+"-"+entry.StartDay1)
-    war.end = new Date(entry.EndYear1+"-"+entry.EndMonth1+"-"+entry.EndDay1)
+
+    let pT = d3.timeParse("%Y-%m-%d");
+    war.start = pT(entry.StartYear1+"-"+entry.StartMonth1+"-"+entry.StartDay1)
+    war.end = pT(entry.EndYear1+"-"+entry.EndMonth1+"-"+entry.EndDay1)
     war.participants = [];
 
     war.addParticipant = function(centry){
@@ -779,6 +783,11 @@ var connectWarsWithCountries = function(){
         }
         nw.addParticipant(ncow);
     }
+
+    // lets only look at the ones since 1970
+    let pT = d3.timeParse("%Y-%m-%d");
+    wars = wars.filter((d)=>d.start > pT("1970-1-1"));
+
 }
 
 
@@ -883,7 +892,7 @@ window.drawLinesOnTimeline = function(){
     .attr("class","couTimeline")
     .attr("fill", "none")
     .attr("stroke", "#535966")
-    .attr("stroke-width", 1.5)
+    .attr("stroke-width", 0.3)
     .merge(couTL)
     .attr("d", (d,i,b) => {
         let ydata = ndsp.positionedPoints.slice(
@@ -905,19 +914,45 @@ window.drawLinesOnTimeline = function(){
 
 window.drawTimeline2 = function() {
 
-    var xScale = d3.scaleLinear().domain([1970, 2024]).range([50, layoutTimelineWidth*3/4 -75]),
-        yScale = d3.scaleLinear().domain([0, 100]).range([layoutTimelineHeight*7/8, 0]);
-        // TODO: the yScale here is not going to be right...
+ //   var xScale = d3.scaleLinear().domain([Date("1970-1-1"), Date("2024-1-1")]).range([50, layoutTimelineWidth*3/4 -75]),
+ //       yScale = d3.scaleLinear().domain([0, 10]).range([layoutTimelineHeight*7/8, 0]);
 
-    timelineSvg.selectAll("myRect")
-    .data(testData2)
+    let pT = d3.timeParse("%Y-%m-%d");
+    var xScale = d3.scaleTime()
+      .domain([pT("1970-1-1"), pT("2024-1-1")])
+      .range([50, layoutTimelineWidth*3/4 -75])
+      ;
+
+    var xAxis = d3.axisBottom(xScale);
+
+
+    let warLi = timelineSvg.selectAll(".warLi")
+    .data(wars);
+    warLi
+    .enter()
+    .append("line")
+    .attr("class","warLi")
+    .attr("x1",d=> xScale(d.start))
+    .attr("y1",10)
+    .attr("x2",d=> xScale(d.end))
+    .attr("y2",30)
+    .attr("stroke","rgb(200,0,0)")
+    .attr("stroke-width",7)
+    //.attr("stroke-linecap","round")
+    ;
+    let warBo = timelineSvg.selectAll(".warBo")
+    .data(wars);
+    warBo
     .enter()
     .append("rect")
-    .attr("x", xScale(0) )
-    .attr("y", function(d) { return yScale(d.value); })
-    .attr("width", function(d) { return xScale(d.date); })
-    //.attr("height", yScale.bandwidth() )
-    .attr("fill", "#69b3a2")
+    .attr("class","warBo")
+    .attr("x",d=> xScale(d.start))
+    .attr("y",10)
+    .attr("width", d=> ( xScale(d.end) - xScale(d.start) ))
+    .attr("height", layoutTimelineHeight*7/8)
+    .attr("fill","rgb(200,0,0,.2)")
+    ;
+
 
 }
 
