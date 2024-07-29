@@ -631,6 +631,11 @@ window.drawMap = function(){
             .attr("stroke","orange")
             .attr("stroke-width",1.5)
             ;
+            d3.select(e.target.country.timeline_line)
+            .interrupt()
+            .attr("stroke","orange")
+            .attr("stroke-width",3.5)
+            ;
         }
     })
     .on('mousemove',(e)=>{
@@ -664,6 +669,15 @@ window.drawMap = function(){
             .duration(15000)
             .attr("stroke",d3.hsl(0,0,1,.1))
             .attr("stroke-width",0.7)
+            ;
+            d3.select(e.target.country.timeline_line)
+            .attr("stroke","skyblue")
+            .transition()
+            //.ease(d3.easePolyIn(1))
+            .ease(d3.easeExpOut)
+            .duration(15000)
+            .attr("stroke", "#535966")
+            .attr("stroke-width", 0.3)
             ;
         }
     })
