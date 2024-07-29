@@ -102,6 +102,7 @@ let newCou = function( cdat, i ){
         "map_area": null,
         "map_lines": [],
         "scatter_line": null,
+        "timeline_line": null,
         "scatter_points": [],
         "war_participations": []
     };
@@ -884,11 +885,12 @@ window.drawLinesOnTimeline = function(){
     .attr("stroke", "#535966")
     .attr("stroke-width", 1.5)
     .merge(couTL)
-    .attr("d", (d) => {
+    .attr("d", (d,i,b) => {
         let ydata = ndsp.positionedPoints.slice(
             d._ef_index_.start,
             d._ef_index_.end
         ).map( ([x,y]) => y );
+        d.timeline_line = b[i];
 
         let xdata = d.ef.map(x=>x.Year);
 
