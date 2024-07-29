@@ -763,6 +763,9 @@ let newWar = function(entry){
         if ( war.end < par.end){ war.end = par.end; }
     };
 
+    war.tl_line = null;
+    war.tl_rect = null;
+
     return war;
 };
 
@@ -930,13 +933,20 @@ window.drawTimeline2 = function() {
     .enter()
     .append("line")
     .attr("class","warLi")
+    .attr("id",(d,i,b)=>{
+        d.tl_line = b[i];
+        b[i]._war = d;
+        return("warLI"+i);
+    })
     .attr("x1",d=> xScale(d.start))
     .attr("y1",10)
     .attr("x2",d=> xScale(d.end))
     .attr("y2",30)
     .attr("stroke","rgb(200,0,0)")
     .attr("stroke-width",7)
-    //.attr("stroke-linecap","round")
+    .on("mouseenter",(e)=>{
+        console.log(e.target._war);
+    });
     ;
     let warBo = timelineSvg.selectAll(".warBo")
     .data(wars);
@@ -944,6 +954,10 @@ window.drawTimeline2 = function() {
     .enter()
     .append("rect")
     .attr("class","warBo")
+    .attr("id",(d,i,b)=>{
+        d.tl_rect = b[i];
+        return("warBo"+i);
+    })
     .attr("x",d=> xScale(d.start))
     .attr("y",10)
     .attr("width", d=> ( xScale(d.end) - xScale(d.start) ))
