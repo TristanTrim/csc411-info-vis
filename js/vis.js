@@ -628,11 +628,6 @@ window.drawMap = function(){
     .attr('fill', d=>d.color)
     .on('mouseenter', (e)=>{
 
-        let mHL = e.target.cloneNode();
-        mHL.setAttribute("id","mHL");
-        mHL.setAttribute("stroke","#fa0");
-        mHL.style.setProperty("pointer-events", "none")
-        mapSvg.append(()=>mHL);
         
      //   d3.select(e.target)
      //   //.attr("fill","sandybrown")
@@ -644,6 +639,20 @@ window.drawMap = function(){
         .html(e.target.getAttribute("name"))
         ;
         if ( e.target.country ){
+
+            let mHL;
+            if( e.target.country.stayHL ){
+                mHL = d3.select("#mHL"+e.target.country._ef_index_.start);
+                console.log(mHL);
+            }else{
+                let mHLnode = e.target.cloneNode();
+                mHL = d3.select(mHLnode);
+                mapSvg.append(()=>mHLnode);
+                mHL.attr("id","mHL"+e.target.country._ef_index_.start);
+                mHL.style("pointer-events", "none")
+            }
+            mHL.style("stroke","#fa0");
+
             d3.selectAll(e.target.country.scatter_points)
             .attr("fill","orange").attr("r",2)
             ;
@@ -667,39 +676,48 @@ window.drawMap = function(){
         //.style("y",(e.clientY+20)+"px")
         ;
     })
+    .on("click", (e)=>{
+        e.target.country.stayHL = ( ! e.target.country.stayHL ) ;
+    })
     .on('mouseleave', (e)=>{
 
-        d3.select("#mHL").remove();
+        d3.select(".countryTitle") .html("") ;
 
-    //    d3.select(e.target)
-    //    .attr('fill', d=>d.color)
-    //    ;
-        d3.select(".countryTitle")
-        .html("")
-        ;
+        //    d3.select(e.target)
+        //    .attr('fill', d=>d.color)
+        //    ;
         if ( e.target.country ){
-            d3.selectAll(e.target.country.scatter_points)
-            .attr("fill",d3.hsl(0,0,1,.1))
-            .attr("r",0.7)
-            ;
-            d3.select(e.target.country.scatter_line)
-            .attr("stroke","skyblue")
-            .transition()
-            //.ease(d3.easePolyIn(1))
-            .ease(d3.easeExpOut)
-            .duration(15000)
-            .attr("stroke",d3.hsl(0,0,1,.1))
-            .attr("stroke-width",0.7)
-            ;
-            d3.select(e.target.country.timeline_line)
-            .attr("stroke","skyblue")
-            .transition()
-            //.ease(d3.easePolyIn(1))
-            .ease(d3.easeExpOut)
-            .duration(15000)
-            .attr("stroke", "#535966")
-            .attr("stroke-width", 0.3)
-            ;
+
+            let mHL = d3.select("#mHL"+e.target.country._ef_index_.start);
+            if( e.target.country.stayHL ){
+                mHL.style("stroke","#b80");
+            }else{
+                console.log(mHL);
+                mHL.remove();
+
+                d3.selectAll(e.target.country.scatter_points)
+                .attr("fill",d3.hsl(0,0,1,.1))
+                .attr("r",0.7)
+                ;
+                d3.select(e.target.country.scatter_line)
+                .attr("stroke","skyblue")
+                .transition()
+                //.ease(d3.easePolyIn(1))
+                .ease(d3.easeExpOut)
+                .duration(15000)
+                .attr("stroke",d3.hsl(0,0,1,.1))
+                .attr("stroke-width",0.7)
+                ;
+                d3.select(e.target.country.timeline_line)
+                .attr("stroke","skyblue")
+                .transition()
+                //.ease(d3.easePolyIn(1))
+                .ease(d3.easeExpOut)
+                .duration(15000)
+                .attr("stroke", "#535966")
+                .attr("stroke-width", 0.3)
+                ;
+            }
         }
     })
     .attr("name",(d)=>{
